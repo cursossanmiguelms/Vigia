@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.log
+.venv/
+venv/
+env/
+
+# Secrets (never commit)
+.env
+.env.*
+!.env.example
+supabase/.env
+supabase/.temp/
+supabase/.branches/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+
+# Captures are local evidence, not source code
+data/captures/*.jpg
+data/captures/*.jpeg
+data/captures/*.png
+data/captures/*.json
+!data/captures/.gitkeep

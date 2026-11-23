@@ -1,0 +1,3696 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>VigIA · Monitoreo de EPP</title>
+  <style>
+:root {
+  --bg: #020406;
+  --bg-soft: #05090d;
+  --panel: #080d13;
+  --panel-2: #0b121a;
+  --panel-3: #0e1721;
+  --line: rgba(120, 165, 200, 0.14);
+  --line-strong: rgba(90, 160, 230, 0.28);
+  --text: #e9f2f9;
+  --text-2: #b6c7d6;
+  --muted: #7d92a5;
+  --muted-2: #5c7082;
+  --blue: #3b9eff;
+  --blue-2: #1f6fe0;
+  --cyan: #64d4ff;
+  --green: #3ddc97;
+  --amber: #f5b84b;
+  --red: #ff5f6d;
+  --violet: #8b7dff;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 30px rgba(59, 158, 255, 0.18);
+  --font: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { min-height: 100%; color-scheme: dark; }
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(47, 125, 255, 0.12), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 10%, rgba(40, 100, 180, 0.1), transparent 60%),
+    linear-gradient(180deg, #05080c 0%, #030507 60%, #020406 100%);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(100, 150, 200, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 150, 200, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, black, transparent 75%);
+}
+
+body.splash-active,
+body.drawer-open { overflow: hidden; }
+
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+a { color: inherit; }
+img, video, svg { display: block; }
+[hidden] { display: none !important; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #030507; }
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 165, 200, 0.18);
+  border: 2px solid #030507;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(120, 165, 200, 0.3); }
+
+.svg-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------------------------------------------------------------- topbar */
+
+.app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(4, 8, 12, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--cyan);
+  background: linear-gradient(145deg, rgba(59, 158, 255, 0.22), rgba(59, 158, 255, 0.04));
+  border: 1px solid rgba(100, 180, 255, 0.35);
+  box-shadow: inset 0 0 20px rgba(59, 158, 255, 0.08);
+}
+
+.brand-mark .icon { width: 22px; height: 22px; }
+
+.brand-text { min-width: 0; }
+.brand-text strong {
+  display: block;
+  font-size: 0.92rem;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.brand-text small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.topnav {
+  display: flex;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.nav-btn .icon { width: 15px; height: 15px; }
+.nav-btn:hover { color: var(--text-2); background: rgba(255, 255, 255, 0.03); }
+.nav-btn.is-active {
+  color: #fff;
+  border-color: rgba(59, 158, 255, 0.3);
+  background: linear-gradient(180deg, rgba(59, 158, 255, 0.18), rgba(59, 158, 255, 0.06));
+  box-shadow: 0 0 18px rgba(59, 158, 255, 0.08);
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.clock {
+  color: var(--text-2);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pill .dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--muted-2);
+}
+
+.status-pill.connected {
+  color: #bff5dd;
+  border-color: rgba(61, 220, 151, 0.3);
+  background: rgba(61, 220, 151, 0.08);
+}
+.status-pill.connected .dot {
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(61, 220, 151, 0.8);
+  animation: pulse 2s ease-in-out infinite;
+}
+.status-pill.connecting {
+  color: #cfe6ff;
+  border-color: rgba(59, 158, 255, 0.3);
+  background: rgba(59, 158, 255, 0.08);
+}
+.status-pill.connecting .dot { background: var(--blue); animation: pulse 1s ease-in-out infinite; }
+.status-pill.error {
+  color: #ffc9cd;
+  border-color: rgba(255, 95, 109, 0.35);
+  background: rgba(255, 95, 109, 0.09);
+}
+.status-pill.error .dot { background: var(--red); }
+
+.role-chip {
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--line-strong); background: rgba(59, 158, 255, 0.06); }
+.icon-btn .icon { width: 17px; height: 17px; }
+
+/* --------------------------------------------------------------- workspace */
+
+.workspace {
+  width: min(1600px, 100%);
+  margin: 0 auto;
+  padding: 20px 24px 32px;
+  flex: 1;
+}
+
+.view { display: none; animation: fadeUp 0.25s ease both; }
+.view.is-active { display: block; }
+
+.live-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 18px;
+  align-items: start;
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(13, 20, 28, 0.92), rgba(7, 11, 16, 0.96));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ----------------------------------------------------------------- viewer */
+
+.viewer-card { overflow: hidden; }
+
+.viewer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.panel-title .icon-box {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(59, 158, 255, 0.22);
+  border-radius: 9px;
+  background: rgba(59, 158, 255, 0.07);
+  color: var(--cyan);
+}
+.panel-title .icon-box .icon { width: 17px; height: 17px; }
+.panel-title strong { display: block; font-size: 0.82rem; letter-spacing: 0.02em; }
+.panel-title small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.66rem; }
+
+.viewer-head-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+.zone-chip,
+.live-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.live-chip {
+  color: var(--green);
+  border-color: rgba(61, 220, 151, 0.25);
+  background: rgba(61, 220, 151, 0.06);
+}
+.live-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(61, 220, 151, 0.7); }
+
+.viewer {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #010305;
+}
+
+.viewer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.55);
+}
+
+.viewer img,
+.viewer video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+  position: relative;
+  z-index: 1;
+  background: #010305;
+}
+
+.viewer canvas#detectionCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.viewer.connected #detectionCanvas { opacity: 1; }
+.viewer.demo-video #detectionCanvas { opacity: 0; }
+
+.viewer.connected img { display: block; }
+.viewer.demo-video img { display: none; }
+.viewer.demo-video video { display: block; }
+
+.viewer:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  border-radius: 0;
+  background: #000;
+}
+.viewer:fullscreen img,
+.viewer:fullscreen video { object-fit: contain; }
+
+.viewer-hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.viewer.connected .viewer-hud,
+.viewer.demo-video .viewer-hud { opacity: 1; }
+.viewer-hud-top { top: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.58), transparent); }
+.viewer-hud-bottom {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.68), transparent);
+  color: #b9ccda;
+  font-size: 0.66rem;
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.hud-chip.detect {
+  color: #a9d2ff;
+  border-color: rgba(59, 158, 255, 0.32);
+}
+.hud-chip.detect .hud-dot {
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(59, 158, 255, 0.8);
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(3, 8, 12, 0.55);
+  backdrop-filter: blur(6px);
+  color: #d7e6f2;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.viewer-badge {
+  position: absolute;
+  top: 52px;
+  left: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid rgba(59, 158, 255, 0.32);
+  border-radius: 6px;
+  background: rgba(8, 20, 34, 0.72);
+  backdrop-filter: blur(6px);
+  color: var(--cyan);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.viewer-badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(100, 212, 255, 0.8);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+.viewer.connected .viewer-badge { opacity: 1; transform: none; }
+
+.viewer-corners { position: absolute; inset: 12px; z-index: 3; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+.viewer.connected .viewer-corners { opacity: 0.55; }
+.viewer-corners i {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: rgba(100, 212, 255, 0.6);
+  border-style: solid;
+}
+.viewer-corners i:nth-child(1) { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.viewer-corners i:nth-child(2) { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.viewer-corners i:nth-child(3) { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+.viewer-corners i:nth-child(4) { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, rgba(59, 158, 255, 0.07), transparent 55%);
+}
+.viewer.connected .placeholder,
+.viewer.connecting .placeholder { display: none; }
+
+.placeholder-icon {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(100, 180, 255, 0.25);
+  border-radius: 21px;
+  background: linear-gradient(145deg, rgba(59, 158, 255, 0.16), rgba(59, 158, 255, 0.02));
+  box-shadow: 0 0 40px rgba(59, 158, 255, 0.12);
+  color: var(--cyan);
+}
+.placeholder-icon .icon { width: 32px; height: 32px; }
+.placeholder h2 { margin: 0 0 6px; font-size: 1.22rem; letter-spacing: -0.01em; }
+.placeholder p { max-width: 370px; margin: 0 0 18px; color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
+.placeholder-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+.loading {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(2, 5, 8, 0.78);
+  backdrop-filter: blur(4px);
+  color: var(--text-2);
+  font-size: 0.78rem;
+}
+.viewer.connecting .loading { display: flex; }
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(100, 180, 255, 0.18);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.viewer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.viewer-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted-2);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+}
+.foot-item { display: inline-flex; align-items: center; gap: 6px; }
+.foot-item .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); }
+
+/* ----------------------------------------------------------------- buttons */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: transform 0.14s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease, opacity 0.16s ease;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn .icon { width: 15px; height: 15px; }
+
+.btn.primary {
+  color: #fff;
+  background: linear-gradient(180deg, #3b9eff, #2378df);
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(35, 120, 223, 0.22);
+}
+.btn.primary:hover:not(:disabled) { background: linear-gradient(180deg, #54adff, #2b84ea); }
+
+.btn.ghost {
+  color: var(--text-2);
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.btn.ghost:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); background: rgba(59, 158, 255, 0.06); }
+
+.btn.danger { color: #ffb3ba; }
+.btn.danger:hover:not(:disabled) { border-color: rgba(255, 95, 109, 0.38); background: rgba(255, 95, 109, 0.07); }
+
+.btn.small { min-height: 34px; padding: 7px 10px; white-space: nowrap; }
+.btn.block { width: 100%; }
+
+.btn:disabled { opacity: 0.38; }
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  color: var(--blue);
+  font-size: 0.7rem;
+  text-decoration: none;
+}
+.link:hover { color: var(--cyan); text-decoration: underline; }
+
+/* ----------------------------------------------------------------- sidebar */
+
+.side { display: flex; flex-direction: column; gap: 14px; }
+
+.card { padding: 16px; }
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.card-head h2 {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.card-badge {
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.card-badge.muted { color: var(--muted-2); }
+.card-badge.blue {
+  color: var(--cyan);
+  border-color: rgba(59, 158, 255, 0.3);
+  background: rgba(59, 158, 255, 0.07);
+}
+.card-badge.amber {
+  color: var(--amber);
+  border-color: rgba(245, 184, 75, 0.28);
+  background: rgba(245, 184, 75, 0.06);
+}
+
+.status-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.status-orb {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(61, 220, 151, 0.25);
+  border-radius: 50%;
+  background: rgba(61, 220, 151, 0.08);
+  color: var(--green);
+}
+.status-orb .icon { width: 17px; height: 17px; }
+.status-hero strong { display: block; font-size: 0.82rem; }
+.status-hero small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.66rem; }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+.stat-grid div {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.015);
+}
+.stat-grid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.57rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.stat-grid dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.summary-item {
+  padding: 12px 7px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  text-align: center;
+}
+.summary-item .icon { width: 16px; height: 16px; margin: 0 auto 6px; color: var(--blue); }
+.summary-item strong { display: block; font-size: 1.12rem; font-variant-numeric: tabular-nums; }
+.summary-item small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.55rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.card-note { margin: 12px 0 0; color: var(--muted-2); font-size: 0.64rem; line-height: 1.5; }
+.card-note.detect-note { margin-top: 6px; }
+.detect-note[data-state="active"] { color: #9fd0ff; }
+.detect-note[data-state="loading"] { color: #b9cbe0; }
+.detect-note[data-state="error"] { color: #ff9c9c; }
+
+.empty-mini {
+  padding: 18px 10px;
+  border: 1px dashed rgba(120, 165, 200, 0.16);
+  border-radius: 11px;
+  text-align: center;
+}
+.empty-mini .icon { width: 26px; height: 26px; margin: 0 auto 8px; color: var(--muted-2); }
+.empty-mini strong { display: block; font-size: 0.76rem; }
+.empty-mini p { margin: 4px 0 0; color: var(--muted); font-size: 0.66rem; line-height: 1.5; }
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font-size: 0.68rem;
+}
+.link-btn:hover { color: var(--cyan); }
+.link-btn .icon { width: 13px; height: 13px; }
+
+/* ------------------------------------------------------------------ fields */
+
+.field { margin-bottom: 11px; }
+label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+input,
+select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: none;
+  background: #060b10;
+  color: var(--text);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+input::placeholder { color: #506575; }
+input:focus,
+select:focus {
+  border-color: rgba(59, 158, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(59, 158, 255, 0.1);
+}
+select { cursor: pointer; }
+select option { background: #0b121a; color: var(--text); }
+
+.field-row { display: flex; gap: 8px; align-items: stretch; }
+.field-row input { flex: 1; min-width: 0; }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 14px;
+  color: var(--text-2);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.checkbox-row input { width: auto; margin: 0; accent-color: var(--blue); }
+
+.dataset-path {
+  margin: 8px 0 0;
+  color: var(--muted-2);
+  font-size: 0.6rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.capture-status {
+  min-height: 1.1em;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.66rem;
+  overflow-wrap: anywhere;
+}
+.capture-status.ok { color: var(--green); }
+.capture-status.error { color: #ffb3ba; }
+
+/* ------------------------------------------------------------------- alert */
+
+.alert {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 80;
+  width: max-content;
+  max-width: min(720px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 95, 109, 0.35);
+  border-radius: 12px;
+  background: rgba(30, 8, 12, 0.95);
+  color: #ffd0d4;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  transform: translateX(-50%);
+  animation: toastIn 0.25s ease both;
+}
+.alert.info {
+  border-color: rgba(59, 158, 255, 0.35);
+  background: rgba(8, 18, 30, 0.95);
+  color: #cfe6ff;
+}
+
+/* ------------------------------------------------------------------ footer */
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+  color: var(--muted-2);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+}
+.app-footer span { display: inline-flex; align-items: center; gap: 6px; }
+.app-footer .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--blue); }
+
+/* ---------------------------------------------------------------- dashboard */
+
+.view-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--blue);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.view-head h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.01em; }
+.view-sub { margin: 6px 0 0; color: var(--muted); font-size: 0.76rem; }
+.view-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.demo-badge {
+  padding: 6px 9px;
+  border: 1px solid rgba(245, 184, 75, 0.3);
+  border-radius: 6px;
+  background: rgba(245, 184, 75, 0.07);
+  color: var(--amber);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.filter-group {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.filter-chip {
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+.filter-chip.is-active {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: rgba(59, 158, 255, 0.08);
+}
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+.kpi { position: relative; overflow: hidden; padding: 16px; }
+.kpi::after {
+  content: "";
+  position: absolute;
+  top: -22px;
+  right: -22px;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 158, 255, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.kpi-label .icon { width: 14px; height: 14px; color: var(--blue); }
+.kpi-value {
+  margin: 10px 0 4px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-value small { margin-left: 2px; color: var(--muted); font-size: 0.78rem; font-weight: 500; }
+.kpi-trend { display: flex; align-items: center; gap: 4px; color: var(--green); font-size: 0.62rem; }
+.kpi-trend.warn { color: var(--amber); }
+.kpi-trend.bad { color: var(--red); }
+.kpi-trend .icon { width: 12px; height: 12px; }
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.85fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.chart-card { padding: 16px; }
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.chart-head h2 {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.chart-legend { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: 0.58rem; }
+.legend-dot { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; }
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 160px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+.bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.bar span {
+  width: 100%;
+  max-width: 34px;
+  height: var(--h);
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, #5bb8ff, #2f7dff);
+  box-shadow: 0 0 18px rgba(59, 158, 255, 0.12);
+}
+.bar.is-low span { background: linear-gradient(180deg, #ffd36b, #e89b1c); }
+.bar small { color: var(--muted-2); font-size: 0.54rem; }
+
+.hbar-list { display: flex; flex-direction: column; gap: 13px; padding-top: 4px; }
+.hbar {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 0.66rem;
+}
+.hbar-track { height: 7px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.05); }
+.hbar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2f7dff, #64d4ff); }
+.hbar-fill.amber { background: linear-gradient(90deg, #e89b1c, #ffd36b); }
+.hbar-fill.red { background: linear-gradient(90deg, #d9414f, #ff7b86); }
+.hbar b { color: var(--text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+
+.table-card { padding: 0; overflow: hidden; }
+.table-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.table-head h2 {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.7rem; white-space: nowrap; }
+th {
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+td { padding: 11px 16px; border-bottom: 1px solid rgba(120, 165, 200, 0.07); color: var(--text-2); }
+tr:last-child td { border-bottom: 0; }
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  font-size: 0.56rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+}
+.status-chip.ok { color: #bff5dd; border: 1px solid rgba(61, 220, 151, 0.2); background: rgba(61, 220, 151, 0.08); }
+.status-chip.warn { color: #ffe0a3; border: 1px solid rgba(245, 184, 75, 0.2); background: rgba(245, 184, 75, 0.08); }
+.status-chip.bad { color: #ffc9cd; border: 1px solid rgba(255, 95, 109, 0.2); background: rgba(255, 95, 109, 0.08); }
+
+.table-link { color: var(--blue); font-size: 0.64rem; text-decoration: none; }
+.table-link:hover { color: var(--cyan); text-decoration: underline; }
+
+.donut-wrap { display: flex; align-items: center; gap: 18px; }
+.donut {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--blue) 0 62%, var(--amber) 62% 84%, var(--red) 84% 100%);
+}
+.donut::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+}
+.donut-center { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; text-align: center; }
+.donut-center strong { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.donut-center small { color: var(--muted); font-size: 0.55rem; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; color: var(--text-2); font-size: 0.66rem; }
+.donut-legend span { display: flex; align-items: center; gap: 6px; }
+.dash-note { margin: 12px 0 0; color: var(--muted-2); font-size: 0.64rem; line-height: 1.5; }
+
+/* ------------------------------------------------------------------ drawer */
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.drawer-backdrop.is-open { opacity: 1; }
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  width: min(440px, 100vw);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, #080d13, #05080c);
+  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.5);
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.drawer.is-open { transform: none; }
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.drawer-head h2 { margin: 0; font-size: 1rem; }
+.drawer-head small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.64rem; }
+
+.drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.drawer-section h3 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.drawer-section .form-hint { margin: 10px 0 0; color: var(--muted-2); font-size: 0.62rem; line-height: 1.5; }
+
+.detail-list { display: grid; gap: 8px; margin: 0; }
+.detail-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(120, 165, 200, 0.07);
+  font-size: 0.68rem;
+}
+.detail-list dt { color: var(--muted); }
+.detail-list dd { margin: 0; color: var(--text-2); text-align: right; overflow-wrap: anywhere; }
+
+.privacy-note {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(59, 158, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(59, 158, 255, 0.04);
+  color: var(--muted);
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+.privacy-note .icon { width: 16px; height: 16px; margin-top: 2px; color: var(--blue); }
+
+.drawer-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted-2);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------ splash */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(30, 90, 160, 0.22), transparent 42%),
+    radial-gradient(circle at 82% 82%, rgba(20, 60, 120, 0.12), transparent 42%),
+    #020406;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+.splash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background-image:
+    linear-gradient(rgba(100, 150, 200, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 150, 200, 0.04) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(circle at 50% 45%, black, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, black, transparent 72%);
+}
+.splash::after {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border: 1px solid rgba(59, 158, 255, 0.08);
+  border-radius: 50%;
+  box-shadow: 0 0 120px rgba(59, 158, 255, 0.06), inset 0 0 80px rgba(59, 158, 255, 0.04);
+  pointer-events: none;
+}
+.splash.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.splash-content {
+  position: relative;
+  z-index: 1;
+  width: min(520px, calc(100vw - 48px));
+  padding: 24px;
+  text-align: center;
+  animation: splashIn 0.8s ease both;
+}
+
+.splash-mark {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(100, 180, 255, 0.3);
+  border-radius: 30px;
+  background: linear-gradient(145deg, rgba(59, 158, 255, 0.2), rgba(59, 158, 255, 0.03));
+  box-shadow: 0 0 60px rgba(59, 158, 255, 0.2), inset 0 0 30px rgba(59, 158, 255, 0.08);
+  color: #bfe9ff;
+}
+.splash-mark::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border: 1px solid rgba(59, 158, 255, 0.15);
+  border-radius: 38px;
+  animation: ring 2.4s ease-in-out infinite;
+}
+.splash-mark .icon { width: 56px; height: 56px; stroke-width: 1.4; }
+
+.splash-eyebrow {
+  margin: 0 0 10px;
+  color: var(--blue);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+.splash h1 {
+  margin: 0;
+  font-size: 2.15rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+.splash h1 span { color: var(--cyan); }
+.splash-subtitle { margin: 10px 0 28px; color: var(--muted); font-size: 0.76rem; line-height: 1.6; }
+
+.splash-progress {
+  width: 240px;
+  height: 3px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.splash-progress span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  animation: load 1.8s ease-in-out infinite;
+}
+.splash-status {
+  margin: 12px 0 0;
+  color: var(--muted-2);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+.splash-skip {
+  margin-top: 22px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-size: 0.66rem;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+.splash-skip:hover { color: var(--text); border-color: var(--line-strong); }
+
+.splash-footer {
+  position: absolute;
+  right: 28px;
+  bottom: 22px;
+  left: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted-2);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+}
+
+/* ---------------------------------------------------------------- responsive */
+
+@media (max-width: 1180px) {
+  .live-grid { grid-template-columns: 1fr; }
+  .side { display: grid; grid-template-columns: 1fr 1fr; }
+  .side .dataset-card { grid-column: span 2; }
+}
+
+@media (max-width: 980px) {
+  .topbar { flex-wrap: wrap; height: auto; padding: 12px 18px; gap: 12px; }
+  .topnav { order: 3; width: 100%; }
+  .topnav .nav-btn { flex: 1; justify-content: center; }
+  .topbar-right { gap: 10px; }
+  .workspace { padding: 16px 18px 28px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .dash-grid { grid-template-columns: 1fr; }
+  .side { grid-template-columns: 1fr; }
+  .side .dataset-card { grid-column: auto; }
+}
+
+@media (max-width: 640px) {
+  .brand-text small { display: none; }
+  .clock { display: none; }
+  .role-chip { display: none; }
+  .viewer-head { align-items: flex-start; }
+  .viewer-head-right { flex-direction: column; align-items: flex-end; }
+  .viewer-actions .btn { flex: 1 1 calc(50% - 8px); }
+  .viewer-foot { gap: 10px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+  .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .splash h1 { font-size: 1.65rem; }
+  .splash-footer { right: 16px; left: 16px; font-size: 0.52rem; }
+  .app-footer { padding: 12px 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* --------------------------------------------------------------- animations */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes load {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+@keyframes ring {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+@keyframes splashIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* --------------------------------------------------- estados y ajustes finos */
+
+.status-hero[data-state="idle"] {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.status-hero[data-state="idle"] .status-orb {
+  color: var(--muted);
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+.status-hero[data-state="connected"] {
+  border-color: rgba(61, 220, 151, 0.24);
+  background: rgba(61, 220, 151, 0.045);
+}
+.status-hero[data-state="connected"] .status-orb {
+  color: var(--green);
+  border-color: rgba(61, 220, 151, 0.3);
+  background: rgba(61, 220, 151, 0.08);
+}
+.status-hero[data-state="connecting"] {
+  border-color: rgba(59, 158, 255, 0.24);
+  background: rgba(59, 158, 255, 0.045);
+}
+.status-hero[data-state="connecting"] .status-orb {
+  color: var(--blue);
+  border-color: rgba(59, 158, 255, 0.3);
+  background: rgba(59, 158, 255, 0.08);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.status-hero[data-state="error"] {
+  border-color: rgba(255, 95, 109, 0.24);
+  background: rgba(255, 95, 109, 0.045);
+}
+.status-hero[data-state="error"] .status-orb {
+  color: var(--red);
+  border-color: rgba(255, 95, 109, 0.3);
+  background: rgba(255, 95, 109, 0.08);
+}
+
+.live-chip.is-idle {
+  color: var(--muted);
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+.live-chip.is-idle .dot {
+  background: var(--muted-2);
+  box-shadow: none;
+  animation: none;
+}
+.live-chip.is-connecting {
+  color: #cfe6ff;
+  border-color: rgba(59, 158, 255, 0.3);
+  background: rgba(59, 158, 255, 0.07);
+}
+.live-chip.is-connecting .dot {
+  background: var(--blue);
+  box-shadow: 0 0 8px rgba(59, 158, 255, 0.7);
+  animation: pulse 1s ease-in-out infinite;
+}
+.live-chip.is-error {
+  color: #ffc9cd;
+  border-color: rgba(255, 95, 109, 0.3);
+  background: rgba(255, 95, 109, 0.07);
+}
+.live-chip.is-error .dot {
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(255, 95, 109, 0.7);
+  animation: none;
+}
+.live-chip.is-demo {
+  color: var(--amber);
+  border-color: rgba(245, 184, 75, 0.3);
+  background: rgba(245, 184, 75, 0.07);
+}
+.live-chip.is-demo .dot {
+  background: var(--amber);
+  box-shadow: 0 0 8px rgba(245, 184, 75, 0.7);
+}
+
+.hud-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(61, 220, 151, 0.7);
+}
+
+.viewer { min-height: 0; }
+.viewer-foot strong { color: var(--text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+  .viewer { aspect-ratio: 4 / 3; }
+}
+.summary-item:nth-child(3) .icon { color: var(--amber); }
+
+.steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 7px;
+  color: var(--text-2);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.steps li::marker { color: var(--blue); font-weight: 700; }
+.steps strong { color: var(--text); font-weight: 650; }
+
+.table-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font-size: 0.64rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.table-link:hover:not(:disabled) { color: var(--cyan); text-decoration: underline; }
+.table-link:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.filter-chip:hover { color: var(--text-2); background: rgba(255, 255, 255, 0.03); }
+.link .icon { width: 13px; height: 13px; }
+.drawer .card {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.015);
+  box-shadow: none;
+}
+.drawer .card .link { margin-top: 12px; }
+
+.alert {
+  max-height: 40vh;
+  overflow-y: auto;
+  cursor: pointer;
+}
+.alert:hover { filter: brightness(1.06); }
+
+:focus-visible {
+  outline: 2px solid rgba(100, 180, 255, 0.72);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible { outline: none; }
+
+</style>
+</head>
+<body class="splash-active">
+<svg class="svg-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.4 2.9 8.4 7 9.6 4.1-1.2 7-5.2 7-9.6V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="m15 10 6-3v10l-6-3Z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5A2.5 2.5 0 0 0 7 6.5V8H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-2V6.5A2.5 2.5 0 0 0 14.5 4Z"/><circle cx="12" cy="13.5" r="3.2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-maximize" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></symbol>
+  <symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></symbol>
+  <symbol id="i-arrow-down-right" viewBox="0 0 24 24"><path d="m7 7 10 10"/><path d="M17 8v9H8"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 19.5h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+
+<div class="splash" id="splash" role="dialog" aria-modal="true" aria-label="Inicio de VigIA">
+  <div class="splash-content">
+    <div class="splash-mark" aria-hidden="true">
+      <svg class="icon"><use href="#i-shield"/></svg>
+    </div>
+    <p class="splash-eyebrow">CIM · Monitoreo de EPP</p>
+    <h1>AUTEC <span>VISION</span></h1>
+    <p class="splash-subtitle">Plataforma local de vigilancia asistida.<br>Video en vivo, evidencia y control de cumplimiento.</p>
+    <div class="splash-progress" aria-hidden="true"><span></span></div>
+    <p class="splash-status" id="splashStatus">Iniciando módulos locales...</p>
+    <button type="button" class="splash-skip" id="splashSkip">Entrar ahora</button>
+  </div>
+  <div class="splash-footer">
+    <span>VigIA · v0.3.0</span>
+    <span>ENTORNO LOCAL · SIN NUBE</span>
+  </div>
+</div>
+
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="VigIA">
+      <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-shield"/></svg></span>
+      <span class="brand-text">
+        <strong>VigIA</strong>
+        <small>MONITOREO DE EPP · CIM</small>
+      </span>
+    </a>
+
+    <nav class="topnav" role="tablist" aria-label="Vistas principales">
+      <button type="button" class="nav-btn is-active" id="navLive" data-view="live" role="tab" aria-selected="true" aria-controls="viewLive">
+        <svg class="icon" aria-hidden="true"><use href="#i-video"/></svg>Vigilancia
+      </button>
+      <button type="button" class="nav-btn" id="navDashboard" data-view="dashboard" role="tab" aria-selected="false" aria-controls="viewDashboard">
+        <svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg>Dashboard
+      </button>
+    </nav>
+
+    <div class="topbar-right">
+      <span class="clock" id="clock" aria-label="Hora actual">--:--:--</span>
+      <div class="status-pill" id="statusPill" role="status" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="statusText">Sin conexión</span>
+      </div>
+      <span class="role-chip" title="Perfil activo">OPERADOR</span>
+      <button type="button" class="icon-btn" id="btnConfig" title="Configuración de cámara" aria-label="Abrir configuración de cámara" aria-controls="configDrawer" aria-expanded="false" aria-haspopup="dialog">
+        <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="view is-active" id="viewLive" role="tabpanel" aria-labelledby="navLive" aria-label="Vigilancia en vivo">
+      <div class="live-grid">
+        <section class="panel viewer-card" aria-label="Visor de cámara">
+          <div class="viewer-head">
+            <div class="panel-title">
+              <span class="icon-box" aria-hidden="true"><svg class="icon"><use href="#i-camera"/></svg></span>
+              <div>
+                <strong>Cámara de vigilancia</strong>
+                <small id="cameraLabel">Sin cámara configurada</small>
+              </div>
+            </div>
+            <div class="viewer-head-right">
+              <span class="zone-chip"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg>CÁMARA 01</span>
+              <span class="live-chip is-idle" id="liveChip"><span class="dot" aria-hidden="true"></span><span id="liveChipText">EN ESPERA</span></span>
+            </div>
+          </div>
+
+          <div class="viewer" id="viewer">
+            <img id="video" alt="Video en vivo de la cámara del teléfono">
+            <video id="demoVideo" muted loop playsinline></video>
+            <canvas id="detectionCanvas" aria-hidden="true"></canvas>
+
+            <div class="viewer-hud viewer-hud-top" aria-hidden="true">
+              <span class="hud-chip"><span class="hud-dot"></span>CÁMARA 01 · CIM</span>
+              <span class="hud-chip" id="hudClock">--:--:--</span>
+            </div>
+
+            <div class="viewer-badge" id="viewerBadge">EN VIVO</div>
+            <div class="viewer-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+            <div class="placeholder" id="placeholder">
+              <div class="placeholder-icon" aria-hidden="true">
+                <svg class="icon"><use href="#i-camera"/></svg>
+              </div>
+              <h2>Sin señal de cámara</h2>
+              <p>La vigilancia está detenida. Abre la configuración, verifica la IP del teléfono y conecta la cámara.</p>
+              <div class="placeholder-actions">
+                <button type="button" class="btn primary" id="btnOpenConfig">
+                  <svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Configurar cámara
+                </button>
+                <button type="button" class="btn ghost" id="btnDemoEmpty">
+                  <svg class="icon" aria-hidden="true"><use href="#i-play"/></svg>Probar archivo
+                </button>
+              </div>
+            </div>
+
+            <div class="loading" id="loading">
+              <div class="spinner" aria-hidden="true"></div>
+              <span>Conectando con la cámara...</span>
+            </div>
+
+            <div class="viewer-hud viewer-hud-bottom" aria-hidden="true">
+              <span class="hud-chip">CIM · ÁREA GENERAL</span>
+              <span class="hud-chip detect" id="hudDetectChip"><span class="hud-dot"></span>PERSONAS <strong id="hudPersons">—</strong></span>
+              <span class="hud-chip"><span id="hudRes">—</span> · <span id="hudFps">— FPS</span></span>
+            </div>
+          </div>
+
+          <div class="viewer-actions">
+            <button type="button" class="btn ghost" id="btnFullscreen" disabled>Pantalla completa</button>
+            <button type="button" class="btn ghost" id="btnSnapshot" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Guardar captura
+            </button>
+            <button type="button" class="btn ghost" id="btnDemo">Probar archivo</button>
+            <button type="button" class="btn ghost danger" id="btnDisconnect" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>Desconectar
+            </button>
+          </div>
+
+          <div class="viewer-foot" aria-label="Telemetría del video">
+            <span class="foot-item"><span class="dot" aria-hidden="true"></span>Resolución <strong id="statResolution">—</strong></span>
+            <span class="foot-item"><span class="dot" aria-hidden="true"></span>FPS <strong id="statFps">—</strong></span>
+            <span class="foot-item"><span class="dot" aria-hidden="true"></span>Primer frame <strong id="statFirstFrame">—</strong></span>
+            <span class="foot-item"><span class="dot" aria-hidden="true"></span>Reconexiones <strong id="statReconnects">0</strong></span>
+          </div>
+
+          <input type="file" id="demoFile" accept="image/*,video/*" hidden>
+        </section>
+
+        <aside class="side" aria-label="Panel de operación">
+          <section class="panel card">
+            <div class="card-head">
+              <h2>Estado de operación</h2>
+              <span class="card-badge blue">LOCAL</span>
+            </div>
+            <div class="status-hero" id="statusHero" data-state="idle">
+              <span class="status-orb" aria-hidden="true"><svg class="icon"><use href="#i-shield"/></svg></span>
+              <div>
+                <strong id="heroStatusTitle">EN ESPERA</strong>
+                <small id="heroStatusSub">Cámara desconectada</small>
+              </div>
+            </div>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <svg class="icon" aria-hidden="true"><use href="#i-users"/></svg>
+                <strong id="summaryPersons">—</strong>
+                <small>Personas</small>
+              </div>
+              <div class="summary-item">
+                <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+                <strong id="summaryCompliant">—</strong>
+                <small>Con EPP</small>
+              </div>
+              <div class="summary-item">
+                <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+                <strong id="summaryAlerts">—</strong>
+                <small>Alertas</small>
+              </div>
+            </div>
+            <p class="card-note">El contador de personas se actualiza con la detección local. La detección de EPP se activará en una etapa posterior.</p>
+            <p class="card-note detect-note" id="detectNote" data-state="idle">Detección local: esperando video.</p>
+          </section>
+
+          <section class="panel card dataset-card">
+            <div class="card-head">
+              <h2>Dataset de validación</h2>
+              <span class="card-badge">LOCAL</span>
+            </div>
+            <div class="field">
+              <label for="captureLabel">Etiqueta de la captura</label>
+              <input id="captureLabel" type="text" placeholder="entrada, laboratorio, pasillo" autocomplete="off" spellcheck="false">
+            </div>
+            <button type="button" class="btn ghost block" id="btnSaveDataset" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-database"/></svg>Guardar en dataset
+            </button>
+            <p class="card-note" id="captureCount">Capturas: —</p>
+            <p class="dataset-path" id="captureDir"></p>
+            <p class="capture-status" id="captureStatus" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel card">
+            <div class="card-head">
+              <h2>Guía rápida</h2>
+              <span class="card-badge muted">OPERADOR</span>
+            </div>
+            <ol class="steps">
+              <li>Confirma que el estado superior diga <strong>En vivo</strong>.</li>
+              <li>Mantén esta vista abierta durante el turno.</li>
+              <li>Si la señal se pierde, avisa al supervisor o abre <strong>Configuración</strong>.</li>
+            </ol>
+            <p class="card-note">No cierres la ventana del servidor mientras la vigilancia esté activa.</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="viewDashboard" role="tabpanel" aria-labelledby="navDashboard" aria-label="Dashboard de supervisión">
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Supervisión · CIM</p>
+          <h1>Dashboard de cumplimiento</h1>
+          <p class="view-sub">Métricas de ejemplo para revisión de tesis. No provienen de detección real.</p>
+        </div>
+        <div class="view-head-actions">
+          <span class="demo-badge">VISTA DE EJEMPLO</span>
+          <div class="filter-group" id="dashFilters" role="group" aria-label="Periodo del dashboard">
+            <button type="button" class="filter-chip is-active" data-filter="today" aria-pressed="true">Hoy</button>
+            <button type="button" class="filter-chip" data-filter="week" aria-pressed="false">Semana</button>
+            <button type="button" class="filter-chip" data-filter="shift" aria-pressed="false">Turno</button>
+          </div>
+          <button type="button" class="btn ghost small" disabled title="Disponible cuando existan datos reales">
+            <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <article class="panel kpi">
+          <div class="kpi-label"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>Cumplimiento EPP</div>
+          <p class="kpi-value">87<small>%</small></p>
+          <p class="kpi-trend"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>+4.2 pts vs. turno anterior</p>
+        </article>
+        <article class="panel kpi">
+          <div class="kpi-label"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg>Personas detectadas</div>
+          <p class="kpi-value">142</p>
+          <p class="kpi-trend"><svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>+12 en el turno</p>
+        </article>
+        <article class="panel kpi">
+          <div class="kpi-label"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>Alertas emitidas</div>
+          <p class="kpi-value">18</p>
+          <p class="kpi-trend warn"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg>6 pendientes de revisión</p>
+        </article>
+        <article class="panel kpi">
+          <div class="kpi-label"><svg class="icon" aria-hidden="true"><use href="#i-activity"/></svg>Tiempo de respuesta</div>
+          <p class="kpi-value">12<small>s</small></p>
+          <p class="kpi-trend"><svg class="icon" aria-hidden="true"><use href="#i-arrow-down-right"/></svg>3 s más rápido</p>
+        </article>
+      </div>
+
+      <div class="dash-grid">
+        <section class="panel chart-card">
+          <div class="chart-head">
+            <h2>Cumplimiento por hora</h2>
+            <div class="chart-legend">
+              <span><i class="legend-dot" style="background:#5bb8ff"></i>En rango</span>
+              <span><i class="legend-dot" style="background:#f5b84b"></i>Bajo umbral</span>
+            </div>
+          </div>
+          <div class="bars" aria-hidden="true">
+            <div class="bar is-low" style="--h:62%"><span></span><small>06</small></div>
+            <div class="bar" style="--h:78%"><span></span><small>08</small></div>
+            <div class="bar" style="--h:85%"><span></span><small>10</small></div>
+            <div class="bar" style="--h:72%"><span></span><small>12</small></div>
+            <div class="bar" style="--h:91%"><span></span><small>14</small></div>
+            <div class="bar" style="--h:88%"><span></span><small>16</small></div>
+            <div class="bar" style="--h:76%"><span></span><small>18</small></div>
+            <div class="bar is-low" style="--h:64%"><span></span><small>20</small></div>
+          </div>
+          <p class="dash-note">El eje vertical representa el porcentaje de personas con EPP completo. Datos ilustrativos.</p>
+        </section>
+
+        <section class="panel chart-card">
+          <div class="chart-head">
+            <h2>Alertas por zona</h2>
+            <span class="card-badge muted">EJEMPLO</span>
+          </div>
+          <div class="hbar-list">
+            <div class="hbar">
+              <span>Entrada</span>
+              <div class="hbar-track"><div class="hbar-fill red" style="width:82%"></div></div>
+              <b>18</b>
+            </div>
+            <div class="hbar">
+              <span>Laboratorio</span>
+              <div class="hbar-track"><div class="hbar-fill amber" style="width:40%"></div></div>
+              <b>8</b>
+            </div>
+            <div class="hbar">
+              <span>Pasillo</span>
+              <div class="hbar-track"><div class="hbar-fill" style="width:24%"></div></div>
+              <b>5</b>
+            </div>
+            <div class="hbar">
+              <span>Patio</span>
+              <div class="hbar-track"><div class="hbar-fill" style="width:15%"></div></div>
+              <b>3</b>
+            </div>
+          </div>
+          <p class="dash-note">Total del turno: 34 alertas registradas. La zona Entrada concentra el 53 %.</p>
+        </section>
+      </div>
+
+      <div class="dash-grid">
+        <section class="panel table-card">
+          <div class="table-head">
+            <h2>Eventos recientes</h2>
+            <span class="card-badge amber">EJEMPLO</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Zona</th>
+                  <th>Tipo de evento</th>
+                  <th>Evidencia</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>14:31</td>
+                  <td>Entrada</td>
+                  <td>Falta casco</td>
+                  <td><button type="button" class="table-link" disabled title="Disponible con datos reales">Ver</button></td>
+                  <td><span class="status-chip ok">Confirmada</span></td>
+                </tr>
+                <tr>
+                  <td>14:28</td>
+                  <td>Pasillo</td>
+                  <td>Sin chaleco</td>
+                  <td><button type="button" class="table-link" disabled title="Disponible con datos reales">Ver</button></td>
+                  <td><span class="status-chip warn">Pendiente</span></td>
+                </tr>
+                <tr>
+                  <td>14:22</td>
+                  <td>Laboratorio</td>
+                  <td>EPP completo</td>
+                  <td><button type="button" class="table-link" disabled title="Disponible con datos reales">Ver</button></td>
+                  <td><span class="status-chip ok">Verificado</span></td>
+                </tr>
+                <tr>
+                  <td>14:15</td>
+                  <td>Entrada</td>
+                  <td>Falta chaleco</td>
+                  <td><button type="button" class="table-link" disabled title="Disponible con datos reales">Ver</button></td>
+                  <td><span class="status-chip ok">Confirmada</span></td>
+                </tr>
+                <tr>
+                  <td>14:02</td>
+                  <td>Patio</td>
+                  <td>Sin casco</td>
+                  <td><button type="button" class="table-link" disabled title="Disponible con datos reales">Ver</button></td>
+                  <td><span class="status-chip warn">Pendiente</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel chart-card">
+          <div class="chart-head">
+            <h2>Distribución de alertas</h2>
+            <span class="card-badge muted">EJEMPLO</span>
+          </div>
+          <div class="donut-wrap">
+            <div class="donut" aria-hidden="true">
+              <div class="donut-center"><strong>34</strong><small>alertas</small></div>
+            </div>
+            <div class="donut-legend">
+              <span><i class="legend-dot" style="background:#3b9eff"></i>EPP completo · 62 %</span>
+              <span><i class="legend-dot" style="background:#f5b84b"></i>EPP parcial · 22 %</span>
+              <span><i class="legend-dot" style="background:#ff5f6d"></i>Sin EPP · 16 %</span>
+            </div>
+          </div>
+          <p class="dash-note">Distribución ilustrativa de las alertas del turno. El dashboard real se conectará al historial de eventos.</p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span><span class="dot" aria-hidden="true"></span>VigIA · Prototipo local · v0.3.0</span>
+    <span>Sin reconocimiento facial · Los datos permanecen en este equipo</span>
+  </footer>
+</div>
+
+<div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true" hidden></div>
+
+<aside class="drawer" id="configDrawer" aria-hidden="true" aria-labelledby="drawerTitle" inert>
+  <div class="drawer-head">
+    <div>
+      <h2 id="drawerTitle">Configuración</h2>
+      <small>Conexión y diagnóstico de cámara</small>
+    </div>
+    <button type="button" class="icon-btn" id="btnConfigClose" aria-label="Cerrar configuración">
+      <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+    </button>
+  </div>
+
+  <div class="drawer-body">
+    <section class="drawer-section">
+      <h3>Conexión DroidCam</h3>
+      <form id="connectForm" novalidate>
+        <div class="field">
+          <label for="host">IP o URL del teléfono</label>
+          <div class="field-row">
+            <input id="host" name="host" type="text" placeholder="172.20.10.2" autocomplete="off" spellcheck="false" inputmode="decimal">
+            <button type="button" class="btn ghost small" id="btnDiscover">Buscar</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="port">Puerto</label>
+          <input id="port" name="port" type="text" placeholder="4747" value="4747" autocomplete="off" spellcheck="false" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="resolution">Resolución del stream</label>
+          <select id="resolution" name="resolution">
+            <option value="1280x720">1280 × 720 · calidad</option>
+            <option value="640x480">640 × 480 · rendimiento</option>
+            <option value="1920x1080">1920 × 1080 · máxima</option>
+          </select>
+        </div>
+        <label class="checkbox-row" for="autoReconnect">
+          <input type="checkbox" id="autoReconnect" checked>
+          Reconectar automáticamente
+        </label>
+        <button type="submit" class="btn primary block" id="btnConnect">Conectar</button>
+      </form>
+      <p class="form-hint">DroidCam debe estar abierto y el cliente de Windows cerrado. La resolución se aplica al conectar o reconectar.</p>
+      <a id="diagLink" class="link" href="#" target="_blank" rel="noreferrer">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>Abrir página de DroidCam
+      </a>
+    </section>
+
+    <section class="drawer-section">
+      <h3>Diagnóstico del stream</h3>
+      <p class="form-hint" id="drawerHint">Se completa cuando la cámara está conectada.</p>
+      <section class="panel card" id="detailsCard" hidden>
+        <div class="card-head">
+          <h2>Detalles técnicos</h2>
+          <span class="card-badge muted">STREAM</span>
+        </div>
+        <dl class="detail-list">
+          <div><dt>Stream</dt><dd id="detailUrl">—</dd></div>
+          <div><dt>Tipo</dt><dd id="detailType">—</dd></div>
+        </dl>
+        <a id="directLink" class="link" href="#" target="_blank" rel="noreferrer">
+          <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>Abrir stream en otra pestaña
+        </a>
+      </section>
+    </section>
+
+    <section class="drawer-section">
+      <h3>Privacidad y alcance</h3>
+      <div class="privacy-note">
+        <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
+        <div>El video se procesa solo en este equipo. No se envía a internet ni se usa reconocimiento facial. Esta versión no incluye detección automática de EPP.</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="drawer-foot">
+    <span>VigIA · v0.3.0</span>
+    <span>ESC PARA CERRAR</span>
+  </div>
+</aside>
+
+<div class="alert" id="alert" hidden role="alert" tabindex="0"></div>
+
+<noscript>
+  <style>
+    .splash { display: none !important; }
+    body.splash-active { overflow: auto; }
+  </style>
+  <div class="alert">Activa JavaScript en el navegador para usar VigIA.</div>
+</noscript>
+
+<script>
+
+    (() => {
+      "use strict";
+
+      const STORAGE_KEY = "autecVision.camera.v1";
+      const MAX_RECONNECT_ATTEMPTS = 12;
+      const HEALTH_INTERVAL_MS = 1000;
+      const STALL_SECONDS = 8;
+      const $ = (id) => document.getElementById(id);
+
+      const els = {
+        host: $("host"),
+        port: $("port"),
+        resolution: $("resolution"),
+        autoReconnect: $("autoReconnect"),
+        form: $("connectForm"),
+        btnConnect: $("btnConnect"),
+        btnDiscover: $("btnDiscover"),
+        btnDisconnect: $("btnDisconnect"),
+        btnFullscreen: $("btnFullscreen"),
+        btnSnapshot: $("btnSnapshot"),
+        btnDemo: $("btnDemo"),
+        btnSaveDataset: $("btnSaveDataset"),
+        demoFile: $("demoFile"),
+        demoVideo: $("demoVideo"),
+        viewer: $("viewer"),
+        video: $("video"),
+        detectionCanvas: $("detectionCanvas"),
+        hudPersons: $("hudPersons"),
+        hudDetectChip: $("hudDetectChip"),
+        summaryPersons: $("summaryPersons"),
+        detectNote: $("detectNote"),
+        viewerBadge: $("viewerBadge"),
+        placeholder: $("placeholder"),
+        loading: $("loading"),
+        statusPill: $("statusPill"),
+        statusText: $("statusText"),
+        alert: $("alert"),
+        detailsCard: $("detailsCard"),
+        detailUrl: $("detailUrl"),
+        detailType: $("detailType"),
+        directLink: $("directLink"),
+        diagLink: $("diagLink"),
+        captureLabel: $("captureLabel"),
+        captureCount: $("captureCount"),
+        captureDir: $("captureDir"),
+        captureStatus: $("captureStatus"),
+        statResolution: $("statResolution"),
+        statFps: $("statFps"),
+        statFirstFrame: $("statFirstFrame"),
+        statReconnects: $("statReconnects")
+      };
+
+      let connectSeq = 0;
+      let state = {
+        host: "",
+        port: "4747",
+        resolution: "1280x720",
+        connected: false,
+        connecting: false,
+        streamUrl: "",
+        demo: false,
+        demoVideoActive: false,
+        demoObjectUrl: "",
+        demoFpsStarted: false,
+        manualStop: true,
+        autoReconnect: true,
+        reconnectAttempts: 0,
+        reconnects: 0,
+        connectStartedAt: 0,
+        firstFrameMs: null,
+        connectTimeout: null,
+        reconnectTimer: null,
+        healthTimer: null,
+        detectionTimer: null,
+        detectionInFlight: false,
+        detectionFailures: 0,
+        lastFrameCount: null,
+        lastFrameCountAt: 0,
+        demoFpsCount: 0,
+        demoFpsLast: 0,
+        capturesDir: "",
+        lastErrorMessage: ""
+      };
+
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function loadSaved() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+          if (saved && typeof saved === "object") {
+            if (saved.host) els.host.value = String(saved.host);
+            if (saved.port) els.port.value = String(saved.port);
+            if (
+              saved.resolution &&
+              ["1280x720", "640x480", "1920x1080"].includes(saved.resolution)
+            ) {
+              els.resolution.value = saved.resolution;
+            }
+            if (typeof saved.autoReconnect === "boolean") {
+              els.autoReconnect.checked = saved.autoReconnect;
+            }
+          }
+        } catch (_) {
+          // Si el navegador bloquea localStorage, se ignora.
+        }
+        state.autoReconnect = els.autoReconnect.checked;
+        state.resolution = els.resolution.value;
+      }
+
+      function saveCurrent() {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              host: els.host.value.trim(),
+              port: els.port.value.trim() || "4747",
+              resolution: els.resolution.value,
+              autoReconnect: els.autoReconnect.checked
+            })
+          );
+        } catch (_) {
+          // Sin persistencia no se interrumpe la app.
+        }
+      }
+
+      function setStatus(kind, text) {
+        els.statusPill.className = "status-pill" + (kind ? " " + kind : "");
+        els.statusText.textContent = text;
+      }
+
+      function updateDiagnosticLink() {
+        const host = els.host.value.trim();
+        const port = els.port.value.trim() || "4747";
+
+        if (!host) {
+          els.diagLink.href = "#";
+          els.diagLink.setAttribute("aria-disabled", "true");
+          return;
+        }
+
+        try {
+          const base = /^https?:\/\//i.test(host) ? host : `http://${host}`;
+          const url = new URL(base);
+          if (!url.port) url.port = port;
+          url.pathname = "/";
+          url.search = "";
+          url.hash = "";
+          els.diagLink.href = url.toString();
+          els.diagLink.removeAttribute("aria-disabled");
+        } catch (_) {
+          els.diagLink.href = "#";
+          els.diagLink.setAttribute("aria-disabled", "true");
+        }
+      }
+
+      function showAlert(message, kind = "error") {
+        els.alert.hidden = false;
+        els.alert.className = "alert" + (kind === "info" ? " info" : "");
+        els.alert.textContent = message;
+      }
+
+      function hideAlert() {
+        els.alert.hidden = true;
+        els.alert.textContent = "";
+      }
+
+      function updateStats(values) {
+        if (Object.prototype.hasOwnProperty.call(values, "resolution")) {
+          els.statResolution.textContent = values.resolution;
+        }
+        if (Object.prototype.hasOwnProperty.call(values, "fps")) {
+          els.statFps.textContent = values.fps;
+        }
+        if (Object.prototype.hasOwnProperty.call(values, "firstFrame")) {
+          els.statFirstFrame.textContent = values.firstFrame;
+        }
+        if (Object.prototype.hasOwnProperty.call(values, "reconnects")) {
+          els.statReconnects.textContent = String(values.reconnects);
+        }
+      }
+
+      function resetStats() {
+        updateStats({
+          resolution: "—",
+          fps: "—",
+          firstFrame: "—",
+          reconnects: state.reconnects
+        });
+      }
+
+      function setConnectBusy(busy) {
+        els.btnConnect.disabled = busy;
+        if (busy) {
+          els.btnConnect.textContent = "Conectando...";
+        } else if (state.demo) {
+          els.btnConnect.textContent = "Conectar cámara";
+        } else {
+          els.btnConnect.textContent = state.connected ? "Reconectar" : "Conectar";
+        }
+      }
+
+      function setConnectedUI(connected) {
+        state.connected = connected;
+        els.viewer.classList.toggle("connected", connected);
+        els.viewer.classList.remove("connecting");
+        els.btnDisconnect.disabled = !connected;
+        els.btnFullscreen.disabled = !connected;
+        els.btnSnapshot.disabled = !connected;
+        els.btnSaveDataset.disabled = !connected;
+        els.btnConnect.disabled = false;
+
+        if (state.demo) {
+          els.btnConnect.textContent = "Conectar cámara";
+        } else {
+          els.btnConnect.textContent = connected ? "Reconectar" : "Conectar";
+        }
+
+        if (!connected) {
+          els.video.onload = null;
+          els.video.onerror = null;
+          els.video.removeAttribute("src");
+          els.video.style.display = "none";
+          els.demoVideo.pause();
+          els.demoVideo.onloadeddata = null;
+          els.demoVideo.onerror = null;
+          els.demoVideo.removeAttribute("src");
+          els.demoVideo.load();
+          els.demoVideo.hidden = true;
+        }
+      }
+
+      function clearReconnectTimer() {
+        if (state.reconnectTimer) {
+          clearTimeout(state.reconnectTimer);
+          state.reconnectTimer = null;
+        }
+      }
+
+      function stopStreamTimers() {
+        if (state.connectTimeout) {
+          clearTimeout(state.connectTimeout);
+          state.connectTimeout = null;
+        }
+        state.lastFrameCount = null;
+        state.lastFrameCountAt = 0;
+        if (state.healthTimer) {
+          clearInterval(state.healthTimer);
+          state.healthTimer = null;
+        }
+      }
+
+      function clearDetectionCanvas() {
+        const canvas = els.detectionCanvas;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function setDetectNote(text, noteState = "idle", detail = "") {
+        if (!els.detectNote) return;
+        els.detectNote.textContent = text;
+        els.detectNote.dataset.state = noteState;
+        els.detectNote.title = detail || text;
+      }
+
+      function noteDetectionFailure() {
+        state.detectionFailures += 1;
+        if (state.detectionFailures >= 3) {
+          setDetectNote(
+            "Detección local: sin respuesta del servidor.",
+            "error",
+            "El video puede seguir funcionando. Se reintentará automáticamente."
+          );
+        }
+      }
+
+      function updateDetectNote(data) {
+        if (!data) return;
+
+        if (data.ok === false || data.status === "error" || data.error) {
+          setDetectNote(
+            "Detección local: error.",
+            "error",
+            data.error || "El detector local no está disponible."
+          );
+          return;
+        }
+
+        if (data.status === "disabled") {
+          setDetectNote(
+            "Detección local: desactivada.",
+            "idle",
+            "Se inició con AUTEC_DETECT=0."
+          );
+          return;
+        }
+
+        if (data.status === "loading") {
+          setDetectNote(
+            "Detección local: cargando modelo…",
+            "loading",
+            "La primera inferencia puede tardar varios segundos."
+          );
+          return;
+        }
+
+        if (data.status === "running" && data.active) {
+          const persons = Number(data.persons);
+          const count = Number.isFinite(persons) ? persons : 0;
+          const fps =
+            typeof data.fps === "number" && data.fps > 0
+              ? `${data.fps.toFixed(1)} FPS`
+              : "";
+          const ms =
+            typeof data.inferenceMs === "number" && data.inferenceMs > 0
+              ? `${Math.round(data.inferenceMs)} ms`
+              : "";
+          const extra = [fps, ms].filter(Boolean).join(" · ");
+          const reidMatches = Number(data.reidMatches) || 0;
+          setDetectNote(
+            `Detección local: activa · ${count} persona${
+              count === 1 ? "" : "s"
+            }${extra ? ` · ${extra}` : ""}`,
+            "active",
+            `Personas con ID activo: ${count}. Cajas en el último fotograma: ${
+              Number.isFinite(Number(data.visiblePersons))
+                ? Number(data.visiblePersons)
+                : "—"
+            }.${
+              reidMatches > 0
+                ? ` ReID: ${reidMatches} recuperación${
+                    reidMatches === 1 ? "" : "es"
+                  }.`
+                : ""
+            }`
+          );
+          return;
+        }
+
+        if (data.status === "running") {
+          const age = Number(data.ageSeconds);
+          if (Number.isFinite(age) && age > 0) {
+            setDetectNote(
+              "Detección local: sin fotogramas recientes.",
+              "idle",
+              `Último fotograma procesado hace ${age.toFixed(1)} s.`
+            );
+          } else {
+            setDetectNote(
+              "Detección local: esperando video.",
+              "idle",
+              "El modelo está listo; falta el primer fotograma."
+            );
+          }
+          return;
+        }
+
+        setDetectNote(
+          "Detección local: esperando video.",
+          "idle",
+          "Conecta la cámara para iniciar la detección local."
+        );
+      }
+
+      function stopDetectionPolling() {
+        if (state.detectionTimer) {
+          clearInterval(state.detectionTimer);
+          state.detectionTimer = null;
+        }
+        state.detectionInFlight = false;
+        state.detectionFailures = 0;
+        clearDetectionCanvas();
+        if (els.hudPersons) els.hudPersons.textContent = "—";
+        if (els.summaryPersons) els.summaryPersons.textContent = "—";
+        if (els.hudDetectChip) {
+          els.hudDetectChip.title = "Detección local de personas";
+        }
+        setDetectNote("Detección local: esperando video.", "idle");
+      }
+
+      function startDetectionPolling() {
+        stopDetectionPolling();
+        pollDetections();
+        state.detectionTimer = setInterval(pollDetections, 400);
+      }
+
+      async function pollDetections() {
+        if (!state.connected || state.demo || state.detectionInFlight) return;
+
+        const seq = connectSeq;
+        state.detectionInFlight = true;
+        try {
+          const response = await fetch("/api/detections", { cache: "no-store" });
+          if (!response.ok) {
+            if (seq === connectSeq && state.connected && !state.demo) {
+              noteDetectionFailure();
+            }
+            return;
+          }
+          const data = await response.json().catch(() => null);
+          if (!data || seq !== connectSeq || !state.connected || state.demo) return;
+          state.detectionFailures = 0;
+          drawDetections(data);
+        } catch (_) {
+          // Si la IA no responde, el video sigue funcionando con normalidad.
+          if (seq === connectSeq && state.connected && !state.demo) {
+            noteDetectionFailure();
+          }
+        } finally {
+          state.detectionInFlight = false;
+        }
+      }
+
+      function updateDetectionCounter(data, count, active) {
+        if (els.hudPersons) {
+          els.hudPersons.textContent = active ? String(count) : "—";
+        }
+        if (els.summaryPersons) {
+          els.summaryPersons.textContent = active ? String(count) : "—";
+        }
+        if (els.hudDetectChip) {
+          const status = data && data.status ? data.status : "";
+          const fps =
+            data && typeof data.fps === "number" && data.fps > 0
+              ? `${data.fps.toFixed(1)} FPS`
+              : "";
+          const ms =
+            data && typeof data.inferenceMs === "number" && data.inferenceMs > 0
+              ? `${Math.round(data.inferenceMs)} ms`
+              : "";
+          const tracked =
+            data && Number.isFinite(Number(data.trackedPersons))
+              ? `${Number(data.trackedPersons)} con ID`
+              : "";
+          const visible =
+            data && Number.isFinite(Number(data.visiblePersons))
+              ? `${Number(data.visiblePersons)} visibles`
+              : "";
+          const reid =
+            data && Number(data.reidMatches) > 0
+              ? `${Number(data.reidMatches)} recuperaci${
+                  Number(data.reidMatches) === 1 ? "ón" : "ones"
+                }`
+              : "";
+          const detail = [
+            status === "running" ? "IA activa" : "",
+            tracked,
+            visible,
+            reid,
+            fps,
+            ms
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          els.hudDetectChip.title = detail || "Detección local de personas";
+          if (data && data.error) els.hudDetectChip.title = data.error;
+        }
+      }
+
+      function drawDetections(data) {
+        const canvas = els.detectionCanvas;
+        const video = els.video;
+        if (!canvas || !video) return;
+
+        const rect = els.viewer.getBoundingClientRect();
+        const cssW = Math.max(1, rect.width);
+        const cssH = Math.max(1, rect.height);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const pixelW = Math.round(cssW * dpr);
+        const pixelH = Math.round(cssH * dpr);
+
+        if (canvas.width !== pixelW || canvas.height !== pixelH) {
+          canvas.width = pixelW;
+          canvas.height = pixelH;
+        }
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, cssW, cssH);
+
+        const frameW = Number(data.width) || video.naturalWidth || 0;
+        const frameH = Number(data.height) || video.naturalHeight || 0;
+        const detections = Array.isArray(data.detections) ? data.detections : [];
+        const active = Boolean(data.active) && frameW > 0 && frameH > 0;
+
+        updateDetectNote(data);
+
+        if (!active) {
+          updateDetectionCounter(data, 0, false);
+          return;
+        }
+
+        // El video usa object-fit: contain. Hay que compensar las barras
+        // negras para que las cajas caigan sobre la imagen real.
+        const scale = Math.min(cssW / frameW, cssH / frameH);
+        const offsetX = (cssW - frameW * scale) / 2;
+        const offsetY = (cssH - frameH * scale) / 2;
+
+        ctx.font = '600 12px "Segoe UI", system-ui, sans-serif';
+        ctx.textBaseline = "middle";
+
+        const boxes = detections.map((det) => {
+          const x1 = offsetX + Number(det.x1) * scale;
+          const y1 = offsetY + Number(det.y1) * scale;
+          const x2 = offsetX + Number(det.x2) * scale;
+          const y2 = offsetY + Number(det.y2) * scale;
+          const confidence = Math.round((Number(det.confidence) || 0) * 100);
+          const trackId =
+            det.trackId !== null && det.trackId !== undefined
+              ? Number(det.trackId)
+              : null;
+          return {
+            x1,
+            y1,
+            x2,
+            y2,
+            label:
+              Number.isFinite(trackId) && trackId !== null
+                ? `persona #${trackId} · ${confidence}%`
+                : `persona ${confidence}%`
+          };
+        });
+
+        for (const box of boxes) {
+          const width = Math.max(1, box.x2 - box.x1);
+          const height = Math.max(1, box.y2 - box.y1);
+
+          ctx.fillStyle = "rgba(59, 158, 255, 0.10)";
+          ctx.strokeStyle = "rgba(59, 158, 255, 0.95)";
+          ctx.lineWidth = 2;
+          ctx.shadowColor = "rgba(59, 158, 255, 0.65)";
+          ctx.shadowBlur = 6;
+          ctx.fillRect(box.x1, box.y1, width, height);
+          ctx.strokeRect(box.x1, box.y1, width, height);
+          ctx.shadowBlur = 0;
+        }
+
+        // Evitar que las etiquetas de personas cercanas se tapen entre si.
+        const placedLabels = [];
+        const overlaps = (a, b) =>
+          a.x < b.x + b.w &&
+          a.x + a.w > b.x &&
+          a.y < b.y + b.h &&
+          a.y + a.h > b.y;
+
+        for (const box of boxes) {
+          const textWidth = ctx.measureText(box.label).width;
+          const labelWidth = textWidth + 12;
+          const labelHeight = 18;
+          const labelX = Math.min(
+            Math.max(0, box.x1),
+            Math.max(0, cssW - labelWidth)
+          );
+          const preferredY = box.y1 - labelHeight - 3;
+          const candidates = [
+            preferredY,
+            box.y1 + 3,
+            preferredY - labelHeight - 2,
+            box.y1 + labelHeight + 6,
+            preferredY - (labelHeight + 2) * 2
+          ];
+          let labelY = candidates.find((candidate) => {
+            if (candidate < 2 || candidate + labelHeight > cssH - 2) {
+              return false;
+            }
+            return !placedLabels.some((placed) =>
+              overlaps(
+                { x: labelX, y: candidate, w: labelWidth, h: labelHeight },
+                placed
+              )
+            );
+          });
+          if (labelY === undefined) {
+            labelY = Math.max(
+              2,
+              Math.min(preferredY, cssH - labelHeight - 2)
+            );
+          }
+          placedLabels.push({
+            x: labelX,
+            y: labelY,
+            w: labelWidth,
+            h: labelHeight
+          });
+
+          ctx.fillStyle = "rgba(8, 20, 34, 0.88)";
+          ctx.fillRect(labelX, labelY, labelWidth, labelHeight);
+          ctx.strokeStyle = "rgba(59, 158, 255, 0.85)";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            labelX + 0.5,
+            labelY + 0.5,
+            labelWidth - 1,
+            labelHeight - 1
+          );
+          ctx.fillStyle = "#eaf4ff";
+          ctx.fillText(box.label, labelX + 6, labelY + labelHeight / 2 + 0.5);
+          ctx.lineWidth = 2;
+        }
+
+        const persons = Number(data.persons);
+        const count = Number.isFinite(persons) ? persons : detections.length;
+        updateDetectionCounter(data, count, true);
+      }
+
+      function stopDemo() {
+        if (state.demoObjectUrl) {
+          URL.revokeObjectURL(state.demoObjectUrl);
+          state.demoObjectUrl = "";
+        }
+        state.demo = false;
+        state.demoVideoActive = false;
+        state.demoFpsStarted = false;
+        state.demoFpsCount = 0;
+        els.demoVideo.pause();
+        els.demoVideo.onloadeddata = null;
+        els.demoVideo.onerror = null;
+        els.demoVideo.removeAttribute("src");
+        els.demoVideo.load();
+        els.demoVideo.hidden = true;
+        els.viewer.classList.remove("demo-video");
+        els.viewerBadge.textContent = "EN VIVO";
+        els.btnDemo.textContent = "Probar archivo";
+        stopDetectionPolling();
+        if (!state.connecting) setConnectBusy(false);
+      }
+
+      function disconnect(updateStatus = true, userInitiated = true) {
+        connectSeq += 1;
+        state.connecting = false;
+        state.streamUrl = "";
+        state.lastErrorMessage = "";
+        if (userInitiated) {
+          state.manualStop = true;
+          state.reconnects = 0;
+        }
+        clearReconnectTimer();
+        stopStreamTimers();
+        stopDetectionPolling();
+        setConnectedUI(false);
+        stopDemo();
+        resetStats();
+        if (updateStatus) setStatus("", "Sin conexión");
+      }
+
+      function markConnected(seq) {
+        if (seq !== connectSeq || !state.connecting) return;
+        state.connecting = false;
+        state.firstFrameMs = Math.round(performance.now() - state.connectStartedAt);
+        if (state.reconnectAttempts > 0) {
+          state.reconnects += 1;
+        }
+        state.reconnectAttempts = 0;
+        state.lastErrorMessage = "";
+        setConnectedUI(true);
+        setStatus("connected", "En vivo");
+        els.viewerBadge.textContent = "EN VIVO";
+        hideAlert();
+        updateStats({
+          resolution: `${els.video.naturalWidth} × ${els.video.naturalHeight}`,
+          firstFrame: `${state.firstFrameMs} ms`,
+          reconnects: state.reconnects
+        });
+        startStreamTimers();
+        startDetectionPolling();
+      }
+
+      function markStreamError(seq, message) {
+        if (seq !== connectSeq) return;
+        state.connecting = false;
+        state.lastErrorMessage = message || "No se pudo abrir el video.";
+        stopStreamTimers();
+        stopDetectionPolling();
+        setConnectedUI(false);
+        if (state.autoReconnect && !state.manualStop && !state.demo) {
+          scheduleReconnect(state.lastErrorMessage);
+          return;
+        }
+        setStatus("error", "Error de video");
+        showAlert(state.lastErrorMessage);
+        diagnoseStreamError(seq);
+      }
+
+      function scheduleReconnect(reason) {
+        if (state.reconnectTimer) return;
+        if (!state.autoReconnect || state.manualStop || state.demo) {
+          setStatus("error", "Error de video");
+          showAlert(reason || "No se pudo conectar con la cámara.");
+          return;
+        }
+        if (state.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          setStatus("error", "Sin conexión");
+          showAlert(
+            `No se pudo reconectar después de ${MAX_RECONNECT_ATTEMPTS} intentos. ` +
+              "Verifica que DroidCam esté abierto y pulsa Reconectar." +
+              (reason ? `\n\nÚltimo error: ${reason}` : "")
+          );
+          diagnoseStreamError(connectSeq);
+          return;
+        }
+
+        state.reconnectAttempts += 1;
+        const waitMs = Math.min(
+          1000 * 2 ** (state.reconnectAttempts - 1),
+          10000
+        );
+        setStatus(
+          "connecting",
+          `Reconectando (${state.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
+        );
+        if (reason) showAlert(reason, "info");
+
+        state.reconnectTimer = setTimeout(() => {
+          state.reconnectTimer = null;
+          if (state.manualStop || !state.autoReconnect || state.demo) return;
+          connect(true);
+        }, waitMs);
+      }
+
+      async function diagnoseStreamError(seq) {
+        // Espera un momento para que DroidCam libere la conexión fallida
+        // antes de volver a consultar el estado real de la cámara.
+        await delay(1200);
+        if (seq !== connectSeq || state.connected || state.demo) return;
+
+        try {
+          const response = await fetch(
+            `/api/probe?host=${encodeURIComponent(state.host)}` +
+              `&port=${encodeURIComponent(state.port)}` +
+              `&res=${encodeURIComponent(state.resolution)}`,
+            { cache: "no-store" }
+          );
+          const data = await response.json().catch(() => ({}));
+          if (seq !== connectSeq || state.connected || state.demo) return;
+
+          if (!response.ok || !data.ok) {
+            if (data.error) showAlert(data.error);
+          } else {
+            showAlert(
+              "La cámara responde, pero el navegador no pudo mostrar el video. " +
+                "Pulsa Reconectar. Si se repite, cierra DroidCam en Windows y revisa la red."
+            );
+          }
+        } catch (_) {
+          // Se conserva el mensaje original.
+        }
+      }
+
+      async function connect(isReconnect = false) {
+        const host = els.host.value.trim();
+        const port = els.port.value.trim() || "4747";
+        const resolution = els.resolution.value || "1280x720";
+
+        if (!host) {
+          showAlert("Escribe la IP o la URL que muestra DroidCam.");
+          els.host.focus();
+          return;
+        }
+
+        clearReconnectTimer();
+        if (!isReconnect) {
+          saveCurrent();
+          state.reconnectAttempts = 0;
+          state.reconnects = 0;
+        }
+        state.manualStop = false;
+        state.autoReconnect = els.autoReconnect.checked;
+        state.resolution = resolution;
+
+        stopDemo();
+        disconnect(false, false);
+        const seq = ++connectSeq;
+
+        state.host = host;
+        state.port = port;
+        state.connecting = true;
+        state.connectStartedAt = performance.now();
+        state.firstFrameMs = null;
+        updateStats({
+          firstFrame: "—",
+          resolution: "—",
+          fps: "—",
+          reconnects: state.reconnects
+        });
+
+        hideAlert();
+        els.viewer.classList.add("connecting");
+        const reconnectLabel =
+          state.reconnectAttempts > 0
+            ? `Reconectando (${state.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
+            : "Reconectando...";
+        setStatus("connecting", isReconnect ? reconnectLabel : "Conectando...");
+        setConnectBusy(true);
+
+        // Da un instante para que se cierre cualquier stream anterior y
+        // DroidCam libere la cámara antes de abrir la nueva conexión.
+        await delay(500);
+        if (seq !== connectSeq) return;
+
+        // No se hace una comprobación previa: DroidCam suele permitir una
+        // sola conexión y el probe podía dejar la cámara ocupada justo
+        // antes de abrir el stream real. Se conecta directamente.
+        state.streamUrl =
+          `/stream?host=${encodeURIComponent(host)}` +
+          `&port=${encodeURIComponent(port)}` +
+          `&res=${encodeURIComponent(resolution)}` +
+          `&t=${Date.now()}`;
+
+        els.detailUrl.textContent = `Detección automática · ${resolution}`;
+        els.detailType.textContent = "MJPEG";
+        els.directLink.href = state.streamUrl;
+        els.detailsCard.hidden = false;
+
+        els.video.onload = () => markConnected(seq);
+        els.video.onerror = () =>
+          markStreamError(
+            seq,
+            "No se pudo abrir el stream. Verifica que DroidCam esté libre y pulsa Reconectar."
+          );
+        els.video.style.display = "block";
+        els.video.src = state.streamUrl;
+
+        state.connectTimeout = setTimeout(() => {
+          if (seq !== connectSeq || !state.connecting) return;
+          if (els.video.naturalWidth > 0 && els.video.naturalHeight > 0) {
+            markConnected(seq);
+          } else {
+            markStreamError(
+              seq,
+              "La cámara no entregó video. Verifica que DroidCam esté abierto y que el cliente de Windows esté detenido."
+            );
+          }
+        }, 12000);
+      }
+
+      function startStreamTimers() {
+        stopStreamTimers();
+        state.healthTimer = setInterval(checkStreamHealth, HEALTH_INTERVAL_MS);
+      }
+
+      async function checkStreamHealth() {
+        if (!state.connected || state.demo) return;
+        const seq = connectSeq;
+        try {
+          const response = await fetch("/api/stream-health", {
+            cache: "no-store"
+          });
+          if (!response.ok) return;
+          const data = await response.json().catch(() => ({}));
+          if (seq !== connectSeq || !state.connected || state.demo) return;
+
+          if (!data.active) {
+            markStreamError(seq, "El stream se detuvo. Reconectando...");
+            return;
+          }
+
+          if (typeof data.frames === "number") {
+            const now = performance.now();
+            if (state.lastFrameCount !== null && state.lastFrameCountAt) {
+              const elapsed = (now - state.lastFrameCountAt) / 1000;
+              if (elapsed >= 0.5) {
+                const delta = Math.max(0, data.frames - state.lastFrameCount);
+                updateStats({ fps: String(Math.round(delta / elapsed)) });
+              }
+            }
+            state.lastFrameCount = data.frames;
+            state.lastFrameCountAt = now;
+          }
+
+          if (
+            typeof data.ageSeconds === "number" &&
+            data.ageSeconds > STALL_SECONDS
+          ) {
+            markStreamError(
+              seq,
+              "El video dejó de recibir datos. Reconectando..."
+            );
+          }
+        } catch (_) {
+          if (seq === connectSeq && state.connected && !state.demo) {
+            markStreamError(
+              seq,
+              "No se pudo consultar el estado del stream. Reconectando..."
+            );
+          }
+        }
+      }
+
+      function currentFrameSource() {
+        return state.demoVideoActive ? els.demoVideo : els.video;
+      }
+
+      function sourceSize(source) {
+        return {
+          width: source.videoWidth || source.naturalWidth || source.width || 0,
+          height:
+            source.videoHeight || source.naturalHeight || source.height || 0
+        };
+      }
+
+      function markDemoReady(kind) {
+        state.connected = true;
+        state.connecting = false;
+        state.manualStop = true;
+        state.reconnects = 0;
+        state.reconnectAttempts = 0;
+        setConnectedUI(true);
+        els.viewerBadge.textContent = "MODO PRUEBA";
+        setStatus(
+          "connected",
+          kind === "video" ? "Prueba (video)" : "Prueba (imagen)"
+        );
+        const size = sourceSize(currentFrameSource());
+        updateStats({
+          resolution:
+            size.width && size.height ? `${size.width} × ${size.height}` : "—",
+          fps: kind === "video" ? "…" : "—",
+          firstFrame: "—",
+          reconnects: 0
+        });
+        hideAlert();
+      }
+
+      function startDemoVideoFps() {
+        if (state.demoFpsStarted) return;
+        state.demoFpsStarted = true;
+        state.demoFpsCount = 0;
+        state.demoFpsLast = performance.now();
+        if (!("requestVideoFrameCallback" in HTMLVideoElement.prototype)) {
+          updateStats({ fps: "—" });
+          return;
+        }
+        const tick = (now) => {
+          if (!state.demoVideoActive) return;
+          state.demoFpsCount += 1;
+          if (now - state.demoFpsLast >= 1000) {
+            updateStats({ fps: String(state.demoFpsCount) });
+            state.demoFpsCount = 0;
+            state.demoFpsLast = now;
+          }
+          els.demoVideo.requestVideoFrameCallback(tick);
+        };
+        els.demoVideo.requestVideoFrameCallback(tick);
+      }
+
+      function startDemo(file) {
+        if (!file) return;
+
+        stopDemo();
+        disconnect(false, false);
+        state.demo = true;
+        state.manualStop = true;
+        state.reconnectAttempts = 0;
+        state.reconnects = 0;
+        hideAlert();
+        els.detailsCard.hidden = true;
+        els.viewer.classList.add("connecting");
+        setStatus("connecting", "Cargando archivo de prueba...");
+        setConnectBusy(true);
+
+        const url = URL.createObjectURL(file);
+        state.demoObjectUrl = url;
+
+        if (file.type.startsWith("video/")) {
+          state.demoVideoActive = true;
+          els.demoVideo.hidden = false;
+          els.viewer.classList.add("demo-video");
+          els.demoVideo.onloadeddata = () => {
+            els.viewer.classList.remove("connecting");
+            markDemoReady("video");
+            els.demoVideo.play().catch(() => {});
+            startDemoVideoFps();
+          };
+          els.demoVideo.onerror = () => {
+            showAlert("No se pudo reproducir el video de prueba.");
+            disconnect(true, true);
+          };
+          els.demoVideo.src = url;
+          els.demoVideo.load();
+          return;
+        }
+
+        if (file.type.startsWith("image/")) {
+          state.demoVideoActive = false;
+          els.video.onload = () => {
+            els.viewer.classList.remove("connecting");
+            markDemoReady("image");
+          };
+          els.video.onerror = () => {
+            showAlert("No se pudo abrir la imagen de prueba.");
+            disconnect(true, true);
+          };
+          els.video.src = url;
+          els.video.style.display = "block";
+          return;
+        }
+
+        showAlert("Selecciona una imagen o un video.");
+        disconnect(true, true);
+      }
+
+      async function captureFrameBlob() {
+        const source = currentFrameSource();
+        const size = sourceSize(source);
+        if (!size.width || !size.height) {
+          throw new Error("No hay imagen disponible para capturar.");
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = size.width;
+        canvas.height = size.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(source, 0, 0, size.width, size.height);
+
+        return await new Promise((resolve, reject) => {
+          canvas.toBlob(
+            (blob) =>
+              blob
+                ? resolve(blob)
+                : reject(new Error("No se pudo generar el JPEG.")),
+            "image/jpeg",
+            0.92
+          );
+        });
+      }
+
+      function downloadBlob(blob) {
+        const stamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .slice(0, 19);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `autec_vision_${stamp}.jpg`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2500);
+      }
+
+      async function takeSnapshot() {
+        if (!state.connected) return;
+
+        try {
+          const blob = await captureFrameBlob();
+          downloadBlob(blob);
+          return;
+        } catch (_) {
+          // Si el canvas falla, se intenta la captura del servidor.
+        }
+
+        if (state.demo) {
+          showAlert("No se pudo capturar el archivo de prueba.");
+          return;
+        }
+
+        const snapshotUrl =
+          `/snapshot?host=${encodeURIComponent(state.host)}` +
+          `&port=${encodeURIComponent(state.port)}` +
+          `&res=${encodeURIComponent(state.resolution)}` +
+          `&t=${Date.now()}`;
+        const anchor = document.createElement("a");
+        anchor.href = snapshotUrl;
+        anchor.download = "";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      }
+
+      async function saveToDataset() {
+        if (!state.connected) return;
+
+        els.btnSaveDataset.disabled = true;
+        els.captureStatus.className = "capture-status";
+        els.captureStatus.textContent = "Guardando captura...";
+
+        try {
+          const blob = await captureFrameBlob();
+          const size = sourceSize(currentFrameSource());
+          const label = els.captureLabel.value.trim();
+          const mode = state.demo
+            ? state.demoVideoActive
+              ? "demo-video"
+              : "demo-image"
+            : "camera";
+          const params = new URLSearchParams({
+            label,
+            host: state.demo ? "" : state.host,
+            port: state.demo ? "" : state.port,
+            resolution: `${size.width}x${size.height}`,
+            mode
+          });
+
+          const response = await fetch(`/api/capture?${params.toString()}`, {
+            method: "POST",
+            headers: { "Content-Type": "image/jpeg" },
+            body: blob
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error || "No se pudo guardar la captura.");
+          }
+
+          els.captureStatus.className = "capture-status ok";
+          els.captureStatus.textContent = `Guardada: ${data.filename} (${data.count} en total)`;
+          loadCaptureInfo();
+        } catch (error) {
+          els.captureStatus.className = "capture-status error";
+          els.captureStatus.textContent =
+            error && error.message
+              ? error.message
+              : "No se pudo guardar la captura.";
+        } finally {
+          els.btnSaveDataset.disabled = !state.connected;
+        }
+      }
+
+      async function loadCaptureInfo() {
+        try {
+          const response = await fetch("/api/captures", { cache: "no-store" });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.ok) return;
+          state.capturesDir = data.dir || "";
+          els.captureCount.textContent =
+            data.count === 1
+              ? "1 captura guardada"
+              : `${data.count} capturas guardadas`;
+          els.captureDir.textContent = data.dir || "";
+        } catch (_) {
+          // Si el servidor no responde, se deja el texto por defecto.
+        }
+      }
+
+      async function discoverCamera() {
+        const port = els.port.value.trim() || "4747";
+        const original = els.btnDiscover.textContent;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        els.btnDiscover.disabled = true;
+        els.btnDiscover.textContent = "Buscando...";
+
+        try {
+          const response = await fetch(
+            `/api/discover?port=${encodeURIComponent(port)}`,
+            { cache: "no-store", signal: controller.signal }
+          );
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error || "No se pudo buscar la cámara.");
+          }
+
+          const candidates = Array.isArray(data.candidates)
+            ? data.candidates
+            : [];
+          if (!candidates.length) {
+            showAlert(
+              `No se encontró una cámara en ${data.subnet || "la red local"}. ` +
+                "Verifica que el teléfono esté despierto, con DroidCam abierto y en la misma red.",
+              "info"
+            );
+            return;
+          }
+
+          const best = candidates[0];
+          els.host.value = best.ip;
+          els.port.value = String(best.port || port);
+          updateDiagnosticLink();
+          saveCurrent();
+          showAlert(
+            `Cámara encontrada en ${best.ip}:${best.port || port}` +
+              (best.verified
+                ? "."
+                : " (puerto abierto, sin confirmar DroidCam).") +
+              " Pulsa Conectar.",
+            "info"
+          );
+        } catch (error) {
+          const message =
+            error && error.name === "AbortError"
+              ? "La búsqueda tardó demasiado. Verifica la red e inténtalo de nuevo."
+              : error && error.message
+                ? error.message
+                : "No se pudo buscar la cámara.";
+          showAlert(message);
+        } finally {
+          clearTimeout(timeout);
+          els.btnDiscover.disabled = false;
+          els.btnDiscover.textContent = original;
+        }
+      }
+
+      els.form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        connect(false);
+      });
+
+      els.btnDisconnect.addEventListener("click", () => {
+        disconnect(true, true);
+        hideAlert();
+        els.detailsCard.hidden = true;
+        els.captureStatus.textContent = "";
+        els.captureStatus.className = "capture-status";
+      });
+
+      els.btnFullscreen.addEventListener("click", async () => {
+        try {
+          if (!document.fullscreenElement) {
+            await els.viewer.requestFullscreen();
+          } else {
+            await document.exitFullscreen();
+          }
+        } catch (_) {
+          showAlert("El navegador no permitió activar pantalla completa.");
+        }
+      });
+
+      document.addEventListener("fullscreenchange", () => {
+        els.btnFullscreen.textContent = document.fullscreenElement
+          ? "Salir de pantalla completa"
+          : "Pantalla completa";
+      });
+
+      els.btnSnapshot.addEventListener("click", takeSnapshot);
+      els.btnSaveDataset.addEventListener("click", saveToDataset);
+      els.btnDemo.addEventListener("click", () => els.demoFile.click());
+      els.demoFile.addEventListener("change", () => {
+        const file = els.demoFile.files && els.demoFile.files[0];
+        els.demoFile.value = "";
+        if (file) startDemo(file);
+      });
+
+      els.btnDiscover.addEventListener("click", discoverCamera);
+
+      els.host.addEventListener("input", updateDiagnosticLink);
+      els.port.addEventListener("input", updateDiagnosticLink);
+
+      els.resolution.addEventListener("change", () => {
+        state.resolution = els.resolution.value;
+        saveCurrent();
+        if (state.connected && !state.demo) {
+          connect(true);
+        }
+      });
+
+      els.autoReconnect.addEventListener("change", () => {
+        state.autoReconnect = els.autoReconnect.checked;
+        saveCurrent();
+        if (
+          state.autoReconnect &&
+          !state.connected &&
+          !state.connecting &&
+          !state.manualStop &&
+          !state.demo
+        ) {
+          scheduleReconnect("Reconexión automática activada.");
+        }
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+
+      loadSaved();
+      updateDiagnosticLink();
+      setStatus("", "Sin conexión");
+      resetStats();
+      loadCaptureInfo();
+    })();
+  
+</script>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const body = document.body;
+  const app = document.querySelector(".app");
+
+  /* ---------------------------------------------------------------- splash */
+
+  const splash = $("splash");
+  const splashStatus = $("splashStatus");
+
+  if (app) app.inert = true;
+
+  function hideSplash() {
+    if (!splash || splash.classList.contains("is-hidden")) return;
+    splash.classList.add("is-hidden");
+    splash.setAttribute("aria-hidden", "true");
+    body.classList.remove("splash-active");
+    if (app) app.inert = false;
+    window.setTimeout(() => {
+      splash.hidden = true;
+    }, 700);
+  }
+
+  if (splash) {
+    window.setTimeout(() => {
+      if (splashStatus) splashStatus.textContent = "Verificando cámara y dataset...";
+    }, 650);
+    window.setTimeout(hideSplash, 1750);
+    $("splashSkip")?.addEventListener("click", hideSplash);
+  }
+
+  /* ----------------------------------------------------------------- vistas */
+
+  const navButtons = Array.from(document.querySelectorAll(".nav-btn[data-view]"));
+  const views = {
+    live: $("viewLive"),
+    dashboard: $("viewDashboard")
+  };
+
+  function setView(name, scroll = true) {
+    navButtons.forEach((button) => {
+      const active = button.dataset.view === name;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+      button.tabIndex = active ? 0 : -1;
+    });
+
+    Object.keys(views).forEach((key) => {
+      const view = views[key];
+      if (!view) return;
+      const active = key === name;
+      view.classList.toggle("is-active", active);
+      view.setAttribute("aria-hidden", active ? "false" : "true");
+    });
+
+    if (name === "dashboard") closeDrawer();
+    if (scroll) window.scrollTo(0, 0);
+  }
+
+  navButtons.forEach((button) => {
+    button.addEventListener("click", () => setView(button.dataset.view));
+  });
+
+  document.querySelector(".topnav")?.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const currentIndex = navButtons.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+    event.preventDefault();
+    const delta = event.key === "ArrowRight" ? 1 : -1;
+    const next =
+      navButtons[(currentIndex + delta + navButtons.length) % navButtons.length];
+    next.focus();
+    setView(next.dataset.view);
+  });
+
+  /* ----------------------------------------------------------------- drawer */
+
+  const drawer = $("configDrawer");
+  const backdrop = $("drawerBackdrop");
+  const btnConfig = $("btnConfig");
+  let backdropTimer = null;
+  let lastFocused = null;
+
+  function openDrawer() {
+    if (!drawer) return;
+    lastFocused = document.activeElement;
+
+    drawer.inert = false;
+    btnConfig?.setAttribute("aria-expanded", "true");
+
+    if (backdropTimer) {
+      window.clearTimeout(backdropTimer);
+      backdropTimer = null;
+    }
+    if (backdrop) {
+      backdrop.hidden = false;
+      window.requestAnimationFrame(() => backdrop.classList.add("is-open"));
+    }
+
+    drawer.classList.add("is-open");
+    drawer.setAttribute("aria-hidden", "false");
+    body.classList.add("drawer-open");
+
+    window.setTimeout(() => {
+      const host = $("host");
+      if (host && drawer.classList.contains("is-open")) {
+        host.focus({ preventScroll: true });
+      }
+    }, 300);
+  }
+
+  function closeDrawer() {
+    if (!drawer || !drawer.classList.contains("is-open")) return;
+
+    drawer.classList.remove("is-open");
+    drawer.setAttribute("aria-hidden", "true");
+    drawer.inert = true;
+    btnConfig?.setAttribute("aria-expanded", "false");
+    body.classList.remove("drawer-open");
+
+    if (backdrop) {
+      backdrop.classList.remove("is-open");
+      backdropTimer = window.setTimeout(() => {
+        backdrop.hidden = true;
+        backdropTimer = null;
+      }, 280);
+    }
+
+    if (lastFocused && typeof lastFocused.focus === "function") {
+      lastFocused.focus({ preventScroll: true });
+      lastFocused = null;
+    }
+  }
+
+  [$("btnConfig"), $("btnOpenConfig")].forEach((button) => {
+    button?.addEventListener("click", openDrawer);
+  });
+  $("btnConfigClose")?.addEventListener("click", closeDrawer);
+  backdrop?.addEventListener("click", closeDrawer);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && drawer?.classList.contains("is-open")) {
+      event.preventDefault();
+      closeDrawer();
+    }
+  });
+
+  $("connectForm")?.addEventListener("submit", () => {
+    const host = $("host");
+    if (host && host.value.trim()) {
+      window.setTimeout(closeDrawer, 320);
+    }
+  });
+
+  /* ------------------------------------------------------------------ reloj */
+
+  const clockTargets = [$("clock"), $("hudClock")].filter(Boolean);
+  const pad = (value) => String(value).padStart(2, "0");
+
+  function tickClock() {
+    const now = new Date();
+    const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    clockTargets.forEach((element) => {
+      element.textContent = time;
+    });
+    const clock = $("clock");
+    if (clock) {
+      clock.title = now.toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+    }
+  }
+
+  tickClock();
+  window.setInterval(tickClock, 1000);
+
+  /* ---------------------------------------------------- estado y telemetría */
+
+  const statusPill = $("statusPill");
+  const statusText = $("statusText");
+  const statusHero = $("statusHero");
+  const heroStatusTitle = $("heroStatusTitle");
+  const heroStatusSub = $("heroStatusSub");
+  const liveChip = $("liveChip");
+  const liveChipText = $("liveChipText");
+
+  const statResolution = $("statResolution");
+  const statFps = $("statFps");
+  const statFirstFrame = $("statFirstFrame");
+  const statReconnects = $("statReconnects");
+
+  const hudRes = $("hudRes");
+  const hudFps = $("hudFps");
+
+  const hostInput = $("host");
+  const portInput = $("port");
+  const cameraLabel = $("cameraLabel");
+
+  function statusKind() {
+    if (!statusPill) return "idle";
+    if (statusPill.classList.contains("connected")) return "connected";
+    if (statusPill.classList.contains("connecting")) return "connecting";
+    if (statusPill.classList.contains("error")) return "error";
+    return "idle";
+  }
+
+  function syncStatus() {
+    const kind = statusKind();
+    const text = (statusText?.textContent || "Sin conexión").trim();
+    const demo = /prueba/i.test(text);
+    const liveLabel =
+      kind === "connected"
+        ? demo
+          ? "MODO PRUEBA"
+          : "EN VIVO"
+        : kind === "connecting"
+          ? "CONECTANDO"
+          : kind === "error"
+            ? "SIN SEÑAL"
+            : "EN ESPERA";
+
+    if (statusHero) {
+      statusHero.dataset.state = kind;
+      if (heroStatusTitle) heroStatusTitle.textContent = liveLabel;
+      if (heroStatusSub) {
+        heroStatusSub.textContent =
+          kind === "connected"
+            ? demo
+              ? text
+              : "Cámara transmitiendo"
+            : kind === "connecting"
+              ? text
+              : kind === "error"
+                ? text
+                : "Cámara desconectada";
+      }
+    }
+
+    if (liveChip) {
+      liveChip.classList.toggle("is-idle", kind === "idle");
+      liveChip.classList.toggle("is-connecting", kind === "connecting");
+      liveChip.classList.toggle("is-error", kind === "error");
+      liveChip.classList.toggle("is-demo", kind === "connected" && demo);
+    }
+    if (liveChipText) liveChipText.textContent = liveLabel;
+  }
+
+  function syncStats() {
+    const resolution = statResolution?.textContent || "—";
+    const fps = statFps?.textContent || "—";
+
+    if (hudRes) hudRes.textContent = resolution;
+    if (hudFps) hudFps.textContent = fps === "—" ? "— FPS" : `${fps} FPS`;
+  }
+
+  function syncCameraLabel() {
+    if (!cameraLabel) return;
+    const host = hostInput?.value.trim() || "";
+    const port = portInput?.value.trim() || "4747";
+    cameraLabel.textContent = host
+      ? `Cámara IP · ${host}:${port}`
+      : "Sin cámara configurada";
+  }
+
+  hostInput?.addEventListener("input", syncCameraLabel);
+  portInput?.addEventListener("input", syncCameraLabel);
+  window.setInterval(syncCameraLabel, 1500);
+
+  const observer = new MutationObserver(() => {
+    syncStatus();
+    syncStats();
+  });
+
+  if (statusPill) {
+    observer.observe(statusPill, { attributes: true, attributeFilter: ["class"] });
+  }
+  [statusText, statResolution, statFps, statFirstFrame, statReconnects].forEach(
+    (element) => {
+      if (element) {
+        observer.observe(element, {
+          childList: true,
+          characterData: true,
+          subtree: true
+        });
+      }
+    }
+  );
+
+  /* --------------------------------------------------------------- extras UI */
+
+  $("btnDemoEmpty")?.addEventListener("click", () => {
+    $("btnDemo")?.click();
+  });
+
+  const alertElement = $("alert");
+  if (alertElement) {
+    alertElement.title = "Clic para cerrar";
+    const dismissAlert = () => {
+      alertElement.hidden = true;
+      alertElement.textContent = "";
+    };
+    alertElement.addEventListener("click", dismissAlert);
+    alertElement.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " " || event.key === "Escape") {
+        event.preventDefault();
+        dismissAlert();
+      }
+    });
+  }
+
+  const detailsCard = $("detailsCard");
+  const drawerHint = $("drawerHint");
+  const syncDrawerHint = () => {
+    if (detailsCard && drawerHint) drawerHint.hidden = !detailsCard.hidden;
+  };
+  if (detailsCard) {
+    new MutationObserver(syncDrawerHint).observe(detailsCard, {
+      attributes: true,
+      attributeFilter: ["hidden"]
+    });
+  }
+  syncDrawerHint();
+
+  document.querySelectorAll("#dashFilters .filter-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll("#dashFilters .filter-chip").forEach((other) => {
+        const active = other === chip;
+        other.classList.toggle("is-active", active);
+        other.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    });
+  });
+
+  setView("live", false);
+  syncStatus();
+  syncStats();
+  syncCameraLabel();
+})();
+
+</script>
+</body>
+</html>

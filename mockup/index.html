@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es" data-accent="cyan" data-density="compact">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="VigIA · Plataforma de monitoreo inteligente asistido por IA.">
+  <title>VigIA · Monitoreo inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/autec.css">
+</head>
+<body class="is-splashing">
+  <div class="splash" id="splash" role="status" aria-live="polite" aria-label="Iniciando VigIA">
+    <div class="splash-grid" aria-hidden="true"></div>
+    <div class="splash-glow" aria-hidden="true"></div>
+    <div class="splash-center">
+      <div class="splash-mark" aria-hidden="true">
+        <svg viewBox="0 0 120 120" fill="none">
+          <defs>
+            <clipPath id="splash-eye-clip">
+              <path d="M25 60c9.5-13 20.6-20 35-20s25.5 7 35 20c-9.5 13-20.6 20-35 20s-25.5-7-35-20Z" />
+            </clipPath>
+          </defs>
+          <rect class="splash-frame" x="9" y="9" width="102" height="102" rx="26" />
+          <path class="splash-bracket splash-bracket--tl" d="M25 37V30a5 5 0 0 1 5-5h7" />
+          <path class="splash-bracket splash-bracket--tr" d="M95 37V30a5 5 0 0 0-5-5h-7" />
+          <path class="splash-bracket splash-bracket--bl" d="M25 83v7a5 5 0 0 0 5 5h7" />
+          <path class="splash-bracket splash-bracket--br" d="M95 83v7a5 5 0 0 1-5 5h-7" />
+          <circle class="splash-orbit" cx="60" cy="60" r="35" />
+          <path class="splash-eye" d="M25 60c9.5-13 20.6-20 35-20s25.5 7 35 20c-9.5 13-20.6 20-35 20s-25.5-7-35-20Z" />
+          <circle class="splash-pupil" cx="60" cy="60" r="9" />
+          <circle class="splash-pupil-core" cx="60" cy="60" r="3.5" />
+          <path class="splash-scan" clip-path="url(#splash-eye-clip)" d="M18 42h84" />
+        </svg>
+      </div>
+      <div class="splash-brand">VIG<span>IA</span></div>
+      <p class="splash-tagline">Visión artificial · Vigía inteligente</p>
+      <div class="splash-progress"><span></span></div>
+      <div class="splash-status mono">Iniciando plataforma<i class="splash-dots"><b>.</b><b>.</b><b>.</b></i></div>
+    </div>
+    <div class="splash-foot"><span class="mono">VIGIA</span><span class="mono">v0.5.0 · SUPABASE</span></div>
+  </div>
+  <noscript><style>#splash { display: none !important; } body.is-splashing { overflow: auto !important; }</style></noscript>
+
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <div id="toast-root" role="status" aria-live="polite"></div>
+  <div id="demo-root"></div>
+
+  <script src="js/icons.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/zones.js"></script>
+  <script src="js/lines.js"></script>
+  <script src="js/heatmap.js"></script>
+  <script src="js/epp.js"></script>
+  <script src="js/tables.js"></script>
+  <script src="js/falls.js"></script>
+  <script src="js/areas.js"></script>
+  <script src="js/monitor.js"></script>
+  <script src="js/cameras.js"></script>
+  <script src="js/views-public.js"></script>
+  <script src="js/views-admin.js"></script>
+  <script src="js/views-company.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/boot.js"></script>
+  <script src="js/splash.js"></script>
+</body>
+</html>
