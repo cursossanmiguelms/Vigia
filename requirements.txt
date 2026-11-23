@@ -1,0 +1,7 @@
+# Dependencias de inferencia local de VigIA.
+# El servidor web y la API funcionan sin instalar este archivo; el detector
+# importa estas librerias de forma diferida cuando se habilita la camara.
+numpy>=1.24,<3
+opencv-python>=4.9,<5
+torch>=2.2,<3
+ultralytics>=8.3,<9

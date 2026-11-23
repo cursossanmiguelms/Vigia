@@ -1,0 +1,2 @@
+# Dependencias minimas para CI. La inferencia pesada no se instala en CI.
+# Las pruebas de Python usan solo la biblioteca estandar.

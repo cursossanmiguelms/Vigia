@@ -302,7 +302,7 @@
       + '<div class="user-card-copy"><strong>' + U.escapeHtml(user.name) + '</strong><span>' + U.roleLabel(role) + '</span></div>'
       + '<button class="icon-btn" data-action="logout" aria-label="Cerrar sesión" title="Cerrar sesión">' + I('logout', 16) + '</button>'
       + '</div>'
-      + '<div class="sidebar-foot-note">' + I('shield-check', 13) + ' VigIA · Demo</div>'
+      + '<div class="sidebar-foot-note">' + I('shield-check', 13) + ' VigIA · v0.5.0</div>'
       + '</div>'
       + '</aside>';
   };
@@ -352,7 +352,7 @@
       + '<div class="sidebar-backdrop" data-action="toggle-sidebar"></div>'
       + '<div class="main">'
       + C.topbar()
-      + (AUTEC.app.state.impersonating ? C.impersonationBanner() : '')
+      + (U.DEMO_MODE && AUTEC.app.state.impersonating ? C.impersonationBanner() : '')
       + '<main class="content" id="main-content">' + content + '</main>'
       + '</div>'
       + '</div>';
@@ -391,7 +391,8 @@
 
   C.demoPanel = function () {
     var state = AUTEC.app.state;
-    if (!AUTEC.app.isAuthed() || AUTEC.app.isPublicPath()) return '';
+    // El panel demo solo existe cuando se activa de forma explícita.
+    if (!U.DEMO_MODE || !AUTEC.app.isAuthed() || AUTEC.app.isPublicPath()) return '';
 
     var company = AUTEC.app.currentCompany();
     var roles = [

@@ -75,33 +75,43 @@ Si no sabes la IP actual, pulsa **Buscar**. La app escanea la red local y busca 
 
 La reconexión automática está activada por defecto. Si el teléfono se duerme o el WiFi se corta, la app intenta reconectar hasta 12 veces con espera creciente.
 
-## Supabase (base de datos persistente)
+## Supabase y acceso
 
-VigIA usa Supabase como sistema de registro. La autenticación sigue siendo simple/demo hasta que se integre Clerk.
+Supabase es la **única fuente de verdad** de VigIA. No hay login falso, fecha simulada ni datos de ejemplo: si Supabase no responde, la interfaz muestra el error y listas vacías. El modo demo solo existe si se activa de forma explícita con `?demo=1` o `localStorage['vigia.demo'] = '1'`.
 
 1. Copia `.env.example` como `.env` y completa las claves del proyecto. **Nunca subas `.env`.**
-2. Aplica el esquema (requiere `SUPABASE_ACCESS_TOKEN` y `SUPABASE_PROJECT_REF`):
+2. Aplica las migraciones (requiere `SUPABASE_ACCESS_TOKEN` y `SUPABASE_PROJECT_REF`):
 
 ```powershell
 .venv\Scripts\python.exe scripts\apply_supabase_sql.py supabase\migrations\20261122000100_vigia_init.sql
+.venv\Scripts\python.exe scripts\apply_supabase_sql.py supabase\migrations\20261123000200_vigia_auth_simple.sql
+.venv\Scripts\python.exe scripts\apply_supabase_sql.py supabase\migrations\20261123000300_vigia_cleanup_demo_data.sql
 ```
 
-3. Carga los datos demo (idempotente):
+3. Define la contraseña del administrador inicial:
 
 ```powershell
-node scripts\seed-supabase.mjs
+.venv\Scripts\python.exe scripts\set_password.py admin@vigia.local 'VigIA2026!'
 ```
 
-4. Arranca el servidor con `run.bat`. El frontend consulta `/api/supabase/health` y, si Supabase responde, hidrata la interfaz desde la base de datos; si no, sigue funcionando con los datos demo locales.
+4. Arranca el servidor con `run.bat` y entra en `http://localhost:8000`.
+
+### Usuario inicial
+
+| Email | Contraseña temporal |
+|---|---|
+| `admin@vigia.local` | `VigIA2026!` |
+
+Cámbiala en cuanto entres. Las contraseñas se guardan como hashes PBKDF2 en `profiles.password_hash`; nunca viajan al navegador. Las sesiones viven en `sessions` y se entregan como una cookie `HttpOnly` de 24 h (`SameSite=Lax`, `Secure` cuando la petición llega por HTTPS).
 
 ### Qué se guarda
 
 - Empresas, planes, usuarios, skills, solicitudes, sesiones, auditoría, notificaciones y pagos.
 - Cámaras, zonas y toda la configuración que antes vivía solo en `localStorage` (`app_configs`).
-- Capturas (Storage bucket público `captures`) y su metadata.
+- Capturas (Storage bucket `captures`) y su metadata.
 - Eventos de alerta (`alert_events`) y snapshots de métricas (`monitoring_metrics`).
 
-Las lecturas públicas usan la *publishable key*; las escrituras pasan por el backend local con la *service role key* y nunca exponen secretos al navegador. Las políticas RLS actuales permiten `SELECT` a `anon`/`authenticated` para alimentar dashboards; se endurecerán al integrar Clerk.
+Las lecturas se hacen con la *publishable key*; **todas las escrituras** (`/api/db`, `/api/events`, `/api/metrics`, `/api/capture`) exigen sesión y pasan por el backend con la *service role key*. El navegador nunca ve secretos. Las políticas RLS actuales permiten `SELECT` a `anon`/`authenticated` para alimentar dashboards; se endurecerán en una fase posterior.
 
 ## Arquitectura
 
@@ -435,6 +445,14 @@ $env:AUTEC_THREADS = "1"
 | Ruta | Descripción |
 |---|---|
 | `GET /api/health` | Estado del servicio y versión. |
+| `GET /api/supabase/health` | Comprueba la conexión con Supabase. |
+| `POST /api/auth/login` | Valida email y contraseña; devuelve el perfil y una cookie `HttpOnly`. |
+| `POST /api/auth/logout` | Cierra la sesión y elimina la cookie. |
+| `GET /api/auth/me` | Devuelve el perfil autenticado, o `{"ok": true, "authenticated": false, "profile": null}` sin sesión. |
+| `GET /api/db/{tabla}` | Lectura pública de tablas de Supabase. |
+| `POST /api/db/{tabla}` | Escritura protegida por sesión. |
+| `PATCH /api/db/{tabla}` | Actualización protegida por sesión. |
+| `DELETE /api/db/{tabla}` | Borrado protegido por sesión. |
 | `GET /api/stream-health` | Estado del stream y fotogramas recibidos. |
 | `GET /api/detections` | Último estado del detector y cajas. |
 | `GET /api/captures` | Número y últimas capturas del dataset. |
@@ -781,16 +799,17 @@ Pulsa **Reconectar**. Si ocurre seguido, revisa la señal WiFi y que el teléfon
 
 ## Privacidad y alcance
 
-Este prototipo está pensado para validación local. El servidor escucha solo en `127.0.0.1`, así que no queda expuesto a la red local ni a internet. El video y las detecciones no se envían a ningún servicio externo. La memoria de apariencia vive solo en RAM y se borra al desconectar la cámara; no se guardan rostros ni plantillas biométricas. No se debe usar para vigilancia individual ni para sanciones automáticas.
+VigIA procesa el video en el equipo: el servidor escucha solo en `127.0.0.1` y las imágenes no se envían a internet. Los datos operativos (empresas, eventos, métricas y evidencia) se guardan en Supabase. La memoria de apariencia vive solo en RAM y se borra al desconectar la cámara; no se guardan rostros ni plantillas biométricas. No se debe usar para vigilancia individual ni para sanciones automáticas.
 
 ## Siguiente fase
 
-La versión 0.4.0 ya incluye detección, seguimiento, memoria de apariencia, zonas con alertas, perfiles de cámara, aforo por línea, gestión de colas, mapa de calor, puestos desatendidos, control de rondas, el piloto EPP con captura automática de evidencia, mesas y clientes, la heurística local de caídas y las cinco skills de ocupación por áreas. El siguiente paso recomendado es:
+La versión 0.5.0 ya incluye la Fase 1: Supabase como única fuente de verdad, auth simple persistida con cookies `HttpOnly`, limpieza de datos de demostración y CI con Python y Node. La detección local, zonas, alertas, EPP, mesas, caídas y ocupación por áreas siguen disponibles sobre esa base. El siguiente paso recomendado es:
 
-1. Entrenar y validar el modelo EPP de casco y chaleco con capturas reales y métricas reproducibles (`models/epp/README.md`).
-2. Reemplazar la heurística de caídas por un modelo de pose y validarla con videos etiquetados.
-3. Validar la detección de mesas con un salón real y ajustar el objetivo de atención por turno.
-4. Validar barra, puestos, salas, aulas y aglomeraciones con layouts reales y medir el error de conteo por área.
-5. Historial persistente de eventos y métricas reales.
-6. Exportar el mapa de calor como imagen y conservarlo entre sesiones.
-7. Endurecer la aplicación para uso continuo.
+1. Migrar la interfaz a Next.js para separar claramente frontend y backend.
+2. Integrar cámaras IP reales (RTSP/HTTP), conservando DroidCam como cliente legacy.
+3. Endurecer RLS y permisos por empresa en Supabase.
+4. Entrenar y validar el modelo EPP de casco y chaleco con capturas reales y métricas reproducibles (`models/epp/README.md`).
+5. Reemplazar la heurística de caídas por un modelo de pose y validarla con videos etiquetados.
+6. Validar mesas y ocupación por áreas con layouts reales y medir el error de conteo.
+7. Exportar el mapa de calor como imagen y conservarlo entre sesiones.
+8. Publicar en Vercel cuando la migración a Next.js esté lista. Pagos y Clerk quedan fuera de este plan.

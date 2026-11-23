@@ -32,13 +32,24 @@
     return map;
   })();
 
+  // Catalogos estaticos de la interfaz (no son datos de negocio). Se guardan
+  // aqui porque AUTEC.data se sustituye por el snapshot de Supabase.
+  var STATIC_DATA = {
+    industries: (AUTEC.data || {}).industries || [],
+    skillGroups: (AUTEC.data || {}).skillGroups || [],
+    monitoring: (AUTEC.data || {}).monitoring || { people: [] },
+    metrics: (AUTEC.data || {}).metrics || {}
+  };
+
   var S = AUTEC.supabase = {
     backend: BACKEND,
     configured: false,
-    source: 'demo',
+    source: 'loading',
     lastError: '',
     data: null,
     baseline: null,
+    authenticated: false,
+    profile: null,
     captureCompanyId: '',
     captureCameraId: ''
   };
@@ -81,7 +92,7 @@
       method: options.method || 'GET',
       headers: options.headers || {},
       cache: 'no-store',
-      credentials: 'omit'
+      credentials: 'same-origin'
     };
     if (controller) init.signal = controller.signal;
     if (options.body !== undefined) {
@@ -274,7 +285,8 @@
       fetchTable('plans', { select: '*', order: 'created_at.asc' }),
       fetchTable('companies', { select: '*', order: 'created_at.asc' }),
       fetchTable('skills', { select: '*', order: 'created_at.asc' }),
-      fetchTable('profiles', { select: '*', order: 'created_at.asc' }),
+      // Nunca pedir password_hash al navegador.
+      fetchTable('profiles', { select: 'id,name,email,role,status,last_access,company_id', order: 'created_at.asc' }),
       fetchTable('access_requests', { select: '*', order: 'created_at.desc' }),
       fetchTable('sessions', { select: '*', order: 'started_at.desc' }),
       fetchTable('audit_log', { select: '*', order: 'created_at.desc', limit: '200' }),
@@ -290,7 +302,7 @@
       var notifications = results[7].map(toNotification);
 
       var creator = profiles.find(function (p) { return p.role === 'creator'; }) || {
-        id: 'u-creator', name: 'Administrador', email: 'admin@vigia.local', role: 'creator'
+        id: '', name: 'Sin administrador', email: '', role: 'creator'
       };
       var users = profiles.filter(function (p) { return p.role !== 'creator'; });
       var payments = results[1].reduce(function (all, row) {
@@ -311,15 +323,15 @@
         creator: creator,
         companies: companies,
         plans: plans,
-        industries: AUTEC.data.industries,
-        skillGroups: AUTEC.data.skillGroups,
+        industries: STATIC_DATA.industries,
+        skillGroups: STATIC_DATA.skillGroups,
         skills: skills,
         users: users,
         requests: requests,
         sessions: sessions,
         audit: audit,
-        monitoring: AUTEC.data.monitoring,
-        metrics: AUTEC.data.metrics,
+        monitoring: STATIC_DATA.monitoring,
+        metrics: STATIC_DATA.metrics,
         notifications: notifications,
         payments: payments
       };
@@ -471,6 +483,7 @@
   }
 
   function diffAndUpsert(table, current, previous, map) {
+    if (!S.authenticated) return Promise.resolve(false);
     var rows = changedRows(current, previous, map);
     if (!rows.length) return Promise.resolve(true);
     return request('/api/db/' + table + '?on_conflict=id', {
@@ -479,7 +492,7 @@
   }
 
   S.persistStore = function () {
-    if (!S.configured || !S.baseline || !AUTEC.store) return Promise.resolve(false);
+    if (!S.configured || !S.authenticated || !S.baseline || !AUTEC.store) return Promise.resolve(false);
     var store = AUTEC.store;
     var base = S.baseline;
     var tasks = [
@@ -512,7 +525,7 @@
   };
 
   S.saveConfig = function (companyId, kind, payload) {
-    if (!S.configured || !CONFIG_KINDS[kind]) return Promise.resolve(false);
+    if (!S.configured || !S.authenticated || !CONFIG_KINDS[kind]) return Promise.resolve(false);
     var id = (companyId || 'global') + ':' + kind;
     return request('/api/db/app_configs?on_conflict=id', {
       method: 'POST',
@@ -521,7 +534,7 @@
   };
 
   S.audit = function (row) {
-    if (!S.configured) return Promise.resolve(false);
+    if (!S.configured || !S.authenticated) return Promise.resolve(false);
     return request('/api/events', {
       method: 'POST',
       body: {
@@ -538,7 +551,7 @@
   };
 
   S.write = function (table, row, options) {
-    if (!S.configured) return Promise.resolve(false);
+    if (!S.configured || !S.authenticated) return Promise.resolve(false);
     options = options || {};
     var query = new URLSearchParams();
     if (options.onConflict) query.set('on_conflict', options.onConflict);
@@ -552,7 +565,7 @@
   };
 
   S.metric = function (row) {
-    if (!S.configured) return Promise.resolve(false);
+    if (!S.configured || !S.authenticated) return Promise.resolve(false);
     return request('/api/metrics', { method: 'POST', body: row })
       .then(function () { return true; }).catch(function () { return false; });
   };
@@ -562,14 +575,68 @@
     S.captureCameraId = cameraId || '';
   };
 
+  // ---- Autenticación simple (cookie HttpOnly) --------------------------------
+
+  function applyProfile(profile) {
+    S.authenticated = !!profile;
+    S.profile = profile || null;
+    return S.profile;
+  }
+
+  S.me = function () {
+    return request('/api/auth/me')
+      .then(function (payload) { return applyProfile(payload && payload.profile); })
+      .catch(function () { return applyProfile(null); });
+  };
+
+  S.login = function (email, password) {
+    return request('/api/auth/login', {
+      method: 'POST',
+      body: { email: email, password: password }
+    }).then(function (payload) { return applyProfile(payload && payload.profile); });
+  };
+
+  S.logout = function () {
+    return request('/api/auth/logout', { method: 'POST' })
+      .catch(function () { return null; })
+      .then(function () { applyProfile(null); return true; });
+  };
+
+  // ---- Arranque --------------------------------------------------------------
+
+  function emptySnapshot() {
+    return {
+      creator: { id: 'u-creator', name: 'Administrador', email: 'admin@vigia.local', role: 'creator' },
+      companies: [], plans: [], industries: STATIC_DATA.industries,
+      skillGroups: STATIC_DATA.skillGroups, skills: [], users: [],
+      requests: [], sessions: [], audit: [], monitoring: STATIC_DATA.monitoring,
+      metrics: STATIC_DATA.metrics, notifications: [], payments: []
+    };
+  }
+
+  function handleFailure(error) {
+    var message = (error && error.message) || String(error || 'Error desconocido');
+    S.lastError = message;
+    // El modo demo es el único que puede mostrar datos de ejemplo, y siempre
+    // tiene que activarse de forma explícita (?demo=1 / vigia.demo=1).
+    if (AUTEC.utils && AUTEC.utils.DEMO_MODE) {
+      S.source = 'demo';
+      return AUTEC.data;
+    }
+    S.source = 'error';
+    S.data = emptySnapshot();
+    S.baseline = clone(S.data);
+    AUTEC.data = S.data;
+    AUTEC.store = clone(S.data);
+    return S.data;
+  }
+
   S.init = function () {
     if (S.data) return Promise.resolve(S.data);
     return request('/api/supabase/health').then(function (health) {
       S.configured = !!(health && health.ok && health.configured);
       if (!S.configured) {
-        S.source = 'demo';
-        S.lastError = (health && health.error) || 'Supabase no configurado';
-        return AUTEC.data;
+        return handleFailure((health && health.error) || 'Supabase no configurado');
       }
       return fetchAppSnapshot().then(function (snapshot) {
         S.data = snapshot;
@@ -584,16 +651,8 @@
         var companyId = snapshot.companies[0] ? snapshot.companies[0].id : '';
         S.saveCaptureContext(companyId, '');
         return loadConfigs(companyId).then(function () { return snapshot; });
-      }).catch(function (error) {
-        S.source = 'demo';
-        S.lastError = error.message || String(error);
-        return AUTEC.data;
-      });
-    }).catch(function (error) {
-      S.source = 'demo';
-      S.lastError = error.message || String(error);
-      return AUTEC.data;
-    });
+      }).catch(handleFailure);
+    }).catch(handleFailure);
   };
 
   S.table = function (name) {

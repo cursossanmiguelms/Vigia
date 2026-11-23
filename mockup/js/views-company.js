@@ -1169,7 +1169,7 @@
         return C.planCard(item, { mode: 'company', company: entity, highlight: item.id === entity.planId });
       }).join('') + '</div></div>'
       + '<div class="section-gap">' + C.card({ title: 'Historial de pagos', subtitle: 'Movimientos registrados por el creador', flush: true, body: paymentsTable }) + '</div>'
-      + '<div class="form-note section-gap">' + I('info', 14) + '<span>Los cambios de plan y asientos se aprueban manualmente. En esta maqueta no se procesa ningún pago real.</span></div>';
+      + '<div class="form-note section-gap">' + I('info', 14) + '<span>Los cambios de plan y asientos se aprueban manualmente.</span></div>';
   };
 
   V.companySettings = function () {
@@ -1299,17 +1299,17 @@
       + C.card({
         title: 'Tu sesión',
         subtitle: 'Cuenta activa',
-        body: '<div class="account-card"><div class="account-head">' + C.avatar(user.name) + '<div><strong>' + esc(user.name) + '</strong><span class="muted small">' + esc(user.email || 'demo@vigia.local') + '</span></div></div>'
+        body: '<div class="account-card"><div class="account-head">' + C.avatar(user.name) + '<div><strong>' + esc(user.name) + '</strong><span class="muted small">' + esc(user.email || '') + '</span></div></div>'
           + '<div class="inline-actions" style="margin-top:12px">' + C.roleBadge(AUTEC.app.state.auth.role) + C.badge(entity.name, 'neutral') + '</div>'
           + '<div class="inline-actions" style="margin-top:14px"><button class="btn btn-ghost btn-sm" data-action="logout">' + I('logout', 14) + ' Cerrar sesión</button></div>'
           + '</div>'
       })
       + C.card({
         title: 'Acerca de',
-        subtitle: 'Maqueta visual',
+        subtitle: 'Plataforma de visión artificial',
         body: '<div class="status-list">'
-          + '<div class="status-row"><span class="status-icon">' + I('shield-check', 16) + '</span><div><strong>VigIA</strong><span class="muted small">Versión 0.4.0 · mockup</span></div></div>'
-          + '<div class="status-row"><span class="status-icon">' + I('server', 16) + '</span><div><strong>Modo</strong><span class="muted small">Local, sin backend</span></div></div>'
+          + '<div class="status-row"><span class="status-icon">' + I('shield-check', 16) + '</span><div><strong>VigIA</strong><span class="muted small">Versión 0.5.0</span></div></div>'
+          + '<div class="status-row"><span class="status-icon">' + I('server', 16) + '</span><div><strong>Modo</strong><span class="muted small">Video local · datos en Supabase</span></div></div>'
           + '<div class="status-row"><span class="status-icon">' + I('mail', 16) + '</span><div><strong>Soporte</strong><span class="muted small">soporte@vigia.local</span></div></div>'
           + '</div>'
       })
@@ -1326,7 +1326,7 @@
         body: C.emptyState({
           icon: 'lock',
           title: 'Esta sección no está disponible',
-          text: 'Probá con otro perfil desde el panel Demo o volvé al resumen de tu operación.',
+          text: 'Si necesitás acceso a esta sección, contactá al administrador o volvé al resumen de tu operación.',
           action: '<a class="btn btn-primary" href="#' + AUTEC.app.homePath() + '">Volver al resumen</a>'
         })
       });

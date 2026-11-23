@@ -1,0 +1,13 @@
+{
+  "name": "vigia",
+  "version": "0.5.0",
+  "private": true,
+  "description": "VigIA - plataforma local de vision artificial con persistencia en Supabase",
+  "scripts": {
+    "test": "node tests/areas.test.js",
+    "check:js": "node scripts/check-js.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -159,9 +159,9 @@
     var system = C.card({
       eyebrow: 'Plataforma',
       title: 'Estado del sistema',
-      subtitle: 'Servicios locales de la maqueta',
+      subtitle: 'Servicios de la plataforma',
       body: C.systemStatus()
-        + '<div class="form-note" style="margin-top:14px">' + I('info', 14) + '<span>Todos los servicios responden con normalidad. La maqueta no ejecuta procesos reales.</span></div>'
+        + '<div class="form-note" style="margin-top:14px">' + I('info', 14) + '<span>Los eventos y las métricas se registran en Supabase.</span></div>'
     });
 
     var recentCompanies = C.card({
@@ -245,7 +245,7 @@
   V.adminCompanyDetail = function (companyId) {
     var company = companyById(companyId);
     if (!company) {
-      return C.pageHead({ eyebrow: 'Empresas', title: 'Empresa no encontrada', subtitle: 'El registro que buscás no existe en esta maqueta.' })
+      return C.pageHead({ eyebrow: 'Empresas', title: 'Empresa no encontrada', subtitle: 'El registro que buscás no existe.' })
         + C.card({ body: C.emptyState({ icon: 'building', title: 'Sin datos', text: 'Volvé al listado para elegir otra empresa.', action: '<a class="btn btn-primary" href="#/admin/empresas">Volver a empresas</a>' }) });
     }
 
@@ -373,7 +373,7 @@
       })
       + C.card({
         title: 'Reglas de negocio',
-        subtitle: 'Cómo funciona la activación en la maqueta',
+        subtitle: 'Cómo funciona la activación de empresas',
         body: '<div class="status-list">'
           + '<div class="status-row"><span class="status-icon">' + I('users', 16) + '</span><div><strong>Asientos configurables</strong><span class="muted small">Cada empresa puede tener un límite distinto al de su plan.</span></div></div>'
           + '<div class="status-row"><span class="status-icon">' + I('check-circle', 16) + '</span><div><strong>Activación manual</strong><span class="muted small">El creador aprueba la solicitud y asigna plan y asientos.</span></div></div>'
@@ -586,7 +586,7 @@
       + '<div class="grid-3">'
       + C.kpi({ label: 'Sesiones activas', value: sessions.length, icon: 'activity', meta: '<span class="text-success">En línea</span>' })
       + C.kpi({ label: 'Empresas conectadas', value: Object.keys(uniqueCompanies).length, icon: 'building', meta: '<span>Con al menos una sesión</span>' })
-      + C.kpi({ label: 'Usuarios únicos', value: sessions.length, icon: 'users', meta: '<span>Sin duplicados en la maqueta</span>' })
+      + C.kpi({ label: 'Usuarios únicos', value: sessions.length, icon: 'users', meta: '<span>Sin duplicados</span>' })
       + '</div>'
       + '<div class="section-gap filter-bar">'
       + '<label class="filter-search">' + I('search', 15) + '<input id="filter-sessions-q" data-filter="sessions.q" value="' + esc(filters.q) + '" placeholder="Buscar usuario, empresa o IP..." aria-label="Buscar sesiones"></label>'
@@ -594,7 +594,7 @@
       + '<span class="filter-spacer"></span><span class="muted small">' + sessions.length + ' conexiones</span>'
       + '</div>'
       + C.card({ flush: true, body: table })
-      + '<div class="form-note section-gap">' + I('info', 14) + '<span>En la maqueta las sesiones son ficticias. En producción se cerrarán automáticamente por inactividad y quedarán registradas en auditoría.</span></div>';
+      + '<div class="form-note section-gap">' + I('info', 14) + '<span>Las sesiones se registran en Supabase y vencen automáticamente.</span></div>';
   };
 
   V.adminAudit = function () {
@@ -623,7 +623,7 @@
       + '<span class="filter-spacer"></span><span class="muted small">' + entries.length + ' registros</span>'
       + '</div>'
       + C.card({ flush: true, body: C.auditTable(entries) })
-      + '<div class="form-note section-gap">' + I('shield-check', 14) + '<span>El registro es de solo lectura en la maqueta. En producción será inmutable y conservará el actor, la IP y el objetivo de cada acción.</span></div>';
+      + '<div class="form-note section-gap">' + I('shield-check', 14) + '<span>El registro conserva el actor, la IP y el objetivo de cada acción.</span></div>';
   };
 
   function settingRow(key, title, text, enabled) {
@@ -633,27 +633,28 @@
 
   V.adminSettings = function () {
     var settings = AUTEC.app.state.settings;
+    var source = (AUTEC.supabase && AUTEC.supabase.source === 'supabase') ? 'Supabase conectado' : 'Supabase sin conexión';
     var system = C.card({
       title: 'Estado del sistema',
-      subtitle: 'Servicios de la maqueta',
+      subtitle: 'Servicios de la plataforma',
       body: C.systemStatus()
         + '<div class="status-list" style="margin-top:8px">'
-        + '<div class="status-row"><span class="status-icon">' + I('server', 16) + '</span><div><strong>Versión</strong><span class="muted small">VigIA 0.4.0 · mockup</span></div></div>'
-        + '<div class="status-row"><span class="status-icon">' + I('monitor', 16) + '</span><div><strong>Modo</strong><span class="muted small">Demostración local, sin backend</span></div></div>'
+        + '<div class="status-row"><span class="status-icon">' + I('server', 16) + '</span><div><strong>Versión</strong><span class="muted small">VigIA 0.5.0</span></div></div>'
+        + '<div class="status-row"><span class="status-icon">' + I('database', 16) + '</span><div><strong>Persistencia</strong><span class="muted small">' + source + '</span></div></div>'
         + '</div>'
     });
 
-    var danger = C.card({
+    var danger = U.DEMO_MODE ? C.card({
       title: 'Datos de demostración',
-      subtitle: 'Todo el estado vive en memoria',
-      body: '<p class="muted small">Reiniciar la demo restaura empresas, usuarios, solicitudes, sesiones y auditoría a su estado inicial. No se borra ningún dato real.</p>'
+      subtitle: 'Solo disponible con ?demo=1',
+      body: '<p class="muted small">Reiniciar la demo restaura los datos de ejemplo en memoria. No afecta la información guardada en Supabase.</p>'
         + '<div class="inline-actions" style="margin-top:14px"><button class="btn btn-danger" data-action="demo-reset">' + I('refresh', 15) + ' Reiniciar datos</button></div>'
-    });
+    }) : '';
 
     return C.pageHead({
       eyebrow: 'Sistema',
       title: 'Ajustes de la plataforma',
-      subtitle: 'Identidad, seguridad y notificaciones globales. Los cambios son simulados.',
+      subtitle: 'Identidad, seguridad y notificaciones globales.',
       actions: '<button class="btn btn-primary" data-action="save-settings">' + I('check', 15) + ' Guardar cambios</button>'
     })
       + '<div class="grid-main">'
@@ -664,7 +665,7 @@
         body: '<form class="form-grid" data-form="admin-settings">'
           + '<div class="field-row"><div class="field"><label for="platform-name">Nombre</label><input class="input" id="platform-name" name="platformName" value="VigIA"></div><div class="field"><label for="platform-domain">Dominio</label><input class="input" id="platform-domain" name="domain" value="vigia.local"></div></div>'
           + '<div class="field-row"><div class="field"><label for="platform-zone">Zona horaria</label><select class="select" id="platform-zone" name="timezone"><option>America/Argentina/Buenos_Aires</option><option>America/Santiago</option><option>America/Mexico_City</option></select></div><div class="field"><label for="platform-language">Idioma</label><select class="select" id="platform-language" name="language"><option>Español (Argentina)</option><option>Español (neutral)</option><option>English</option></select></div></div>'
-          + '<div class="form-note">' + I('info', 14) + '<span>El nombre y el dominio son de ejemplo. En producción se usarán para el acceso y las notificaciones.</span></div>'
+          + '<div class="form-note">' + I('info', 14) + '<span>El nombre y el dominio se usan en la interfaz y en las notificaciones.</span></div>'
           + '<div class="inline-actions"><button class="btn btn-primary btn-sm" type="submit">' + I('check', 14) + ' Guardar identidad</button></div>'
           + '</form>'
       })
@@ -694,10 +695,10 @@
       + '<div class="stack">' + system + danger
       + C.card({
         title: 'Acerca de',
-        subtitle: 'Maqueta visual',
+        subtitle: 'Plataforma de visión artificial',
         body: '<div class="status-list">'
           + '<div class="status-row"><span class="status-icon">' + I('shield-check', 16) + '</span><div><strong>VigIA</strong><span class="muted small">Plataforma local de visión artificial</span></div></div>'
-          + '<div class="status-row"><span class="status-icon">' + I('server', 16) + '</span><div><strong>Build</strong><span class="muted small">mockup-2026.11.11</span></div></div>'
+          + '<div class="status-row"><span class="status-icon">' + I('server', 16) + '</span><div><strong>Build</strong><span class="muted small">v0.5.0</span></div></div>'
           + '<div class="status-row"><span class="status-icon">' + I('mail', 16) + '</span><div><strong>Soporte</strong><span class="muted small">soporte@vigia.local</span></div></div>'
           + '</div>'
       })

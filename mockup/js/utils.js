@@ -1,7 +1,21 @@
 (function () {
   window.AUTEC = window.AUTEC || {};
 
-  var DEMO_TODAY = new Date('2026-11-11T12:00:00');
+  // Reloj real: las fechas se comparan contra hoy, no contra una fecha fija.
+  var TODAY = new Date();
+
+  // El modo demo es opt-in explicito (?demo=1 o localStorage vigia.demo=1).
+  // Sin este flag la aplicacion trabaja solo con datos de Supabase.
+  var DEMO_MODE = (function () {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('demo') === '1'
+        || window.localStorage.getItem('vigia.demo') === '1'
+        || window.localStorage.getItem('autecVision.demoMode') === '1';
+    } catch (_) {
+      return false;
+    }
+  })();
 
   var MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -40,7 +54,7 @@
   function daysUntil(value) {
     var d = parseDate(value);
     if (!d) return null;
-    return Math.ceil((d.getTime() - DEMO_TODAY.getTime()) / 86400000);
+    return Math.ceil((d.getTime() - TODAY.getTime()) / 86400000);
   }
 
   function expiryMeta(value) {
@@ -188,7 +202,8 @@
   }
 
   AUTEC.utils = {
-    DEMO_TODAY: DEMO_TODAY,
+    TODAY: TODAY,
+    DEMO_MODE: DEMO_MODE,
     MONTHS: MONTHS,
     escapeHtml: escapeHtml,
     initials: initials,

@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Instalar dependencias de desarrollo
+        run: pip install -r requirements-dev.txt
+      - name: Compilar modulo Python
+        run: python -m py_compile server.py supabase_store.py auth_store.py detector.py
+      - name: Pruebas unitarias
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+  javascript:
+    name: JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Comprobar sintaxis
+        run: npm run check:js
+      - name: Pruebas del motor de areas
+        run: npm test
+
+  supabase-migrations:
+    name: Migraciones Supabase
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Aplicar migraciones pendientes
+        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_REF != ''
+        run: |
+          for file in supabase/migrations/*.sql; do
+            echo "Aplicando $file"
+            python scripts/apply_supabase_sql.py "$file"
+          done
+      - name: Omitir si no hay credenciales
+        if: env.SUPABASE_ACCESS_TOKEN == '' || env.SUPABASE_PROJECT_REF == ''
+        run: echo "Secretos de Supabase no configurados; se omite este paso."

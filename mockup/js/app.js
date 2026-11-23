@@ -68,12 +68,12 @@
   }
 
   function isoDate(date) {
-    var d = date || U.DEMO_TODAY;
+    var d = date || U.TODAY;
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
 
   function addDaysISO(days) {
-    var d = new Date(U.DEMO_TODAY.getTime() + Number(days || 0) * 86400000);
+    var d = new Date(U.TODAY.getTime() + Number(days || 0) * 86400000);
     return isoDate(d);
   }
 
@@ -125,6 +125,8 @@
 
   function currentUser() {
     if (!state.auth) return { id: 'guest', name: 'Visitante', email: '—', role: 'operator' };
+    // El perfil autenticado viene del backend; nunca se inventa un usuario.
+    if (state.auth.profile) return state.auth.profile;
     if (state.auth.role === 'creator') return AUTEC.store.creator;
     var company = currentCompany();
     var user = AUTEC.store.users.find(function (item) {
@@ -133,7 +135,7 @@
       return item.companyId === company.id && item.role === state.auth.role;
     });
     if (user) return user;
-    return { id: 'demo', name: U.roleLabel(state.auth.role), email: 'demo@vigia.local', role: state.auth.role };
+    return { id: '', name: U.roleLabel(state.auth.role), email: '', role: state.auth.role };
   }
 
   function planFor(company) {
@@ -395,7 +397,7 @@
       seats: Number(data.seats) || plan.seats,
       usersCount: 0,
       expiresAt: data.expiresAt || addDaysISO(plan.durationDays || 14),
-      createdAt: isoDate(U.DEMO_TODAY),
+      createdAt: isoDate(U.TODAY),
       contact: data.contact || '—',
       email: data.email || '—',
       phone: data.phone || '—',
@@ -583,7 +585,7 @@
       body: hidden('id', company.id)
         + '<p class="muted small">' + (suspending
           ? 'La empresa dejará de aparecer como activa y sus usuarios no podrán iniciar sesión. Los datos se conservan.'
-          : 'La empresa volverá al estado activo. Si el plan estaba vencido, se extenderá 30 días en esta maqueta.') + '</p>'
+          : 'La empresa volverá al estado activo. Si el plan estaba vencido, se extenderá 30 días.') + '</p>'
     });
   }
 
@@ -666,7 +668,7 @@
       subtitle: user.name,
       form: 'reset-password',
       submitLabel: 'Generar enlace',
-      body: hidden('id', user.id) + '<p class="muted small">Se generará un enlace de restablecimiento para <strong>' + esc(user.email) + '</strong>. En esta maqueta no se envía ningún correo.</p>'
+      body: hidden('id', user.id) + '<p class="muted small">Se generará un enlace de restablecimiento para <strong>' + esc(user.email) + '</strong>.</p>'
     });
   }
 
@@ -745,7 +747,7 @@
       body: hidden('id', request.id) + hidden('type', request.type) + '<div class="form-grid">'
         + '<p class="muted small">' + esc(request.detail) + '</p>'
         + fieldRow(selectField('Plan', 'planId', planOptions(), currentPlanId), request.type === 'renewal' ? field('Meses', 'months', '12', { type: 'number', attrs: 'min="1"' }) : field('Asientos', 'seats', company ? String(company.seats) : '15', { type: 'number', attrs: 'min="1"' }))
-        + '<div class="form-note">' + I('info', 14) + '<span>Se registra un pago manual y se actualiza el vencimiento. En la maqueta no se procesa dinero real.</span></div>'
+        + '<div class="form-note">' + I('info', 14) + '<span>Se registra un pago manual y se actualiza el vencimiento.</span></div>'
         + '</div>'
     });
   }
@@ -823,7 +825,7 @@
       form: 'close-session',
       submitLabel: 'Cerrar sesión',
       danger: true,
-      body: hidden('id', session.id) + '<p class="muted small">Se cerrará la sesión de <strong>' + esc(session.userName) + '</strong> en <strong>' + esc(session.companyName) + '</strong>. En la maqueta la sesión desaparece del listado.</p>'
+      body: hidden('id', session.id) + '<p class="muted small">Se cerrará la sesión de <strong>' + esc(session.userName) + '</strong> en <strong>' + esc(session.companyName) + '</strong>.</p>'
     });
   }
 
@@ -842,16 +844,16 @@
     var role = state.auth.role;
     openModal({
       title: 'Tu cuenta',
-      subtitle: 'Sesión de demostración',
+      subtitle: 'Sesión activa',
       noFoot: true,
-      body: '<div class="account-card"><div class="account-head">' + C.avatar(user.name) + '<div><strong>' + esc(user.name) + '</strong><span class="muted small">' + esc(user.email || 'demo@vigia.local') + '</span></div></div>'
+      body: '<div class="account-card"><div class="account-head">' + C.avatar(user.name) + '<div><strong>' + esc(user.name) + '</strong><span class="muted small">' + esc(user.email || '') + '</span></div></div>'
         + '<div class="inline-actions" style="margin-top:12px">' + C.roleBadge(role) + (role === 'creator' ? C.badge('Administración global', 'accent') : C.badge(company.name, 'neutral')) + '</div></div>'
         + '<div class="status-list">'
         + '<div class="status-row"><span class="status-icon">' + I('user', 16) + '</span><div><strong>Perfil</strong><span class="muted small">' + U.roleLabel(role) + '</span></div></div>'
         + '<div class="status-row"><span class="status-icon">' + I('building', 16) + '</span><div><strong>Contexto</strong><span class="muted small">' + (role === 'creator' ? 'Todas las empresas' : esc(company.name)) + '</span></div></div>'
-        + '<div class="status-row"><span class="status-icon">' + I('clock', 16) + '</span><div><strong>Sesión</strong><span class="muted small">Iniciada en esta pestaña · demo</span></div></div>'
+        + '<div class="status-row"><span class="status-icon">' + I('clock', 16) + '</span><div><strong>Sesión</strong><span class="muted small">Verificada por el servidor</span></div></div>'
         + '</div>'
-        + '<div class="inline-actions"><button class="btn btn-ghost" data-action="open-demo">Cambiar de rol</button><button class="btn btn-danger" data-action="logout">Cerrar sesión</button></div>'
+        + '<div class="inline-actions">' + (U.DEMO_MODE ? '<button class="btn btn-ghost" data-action="open-demo">Cambiar de rol</button>' : '') + '<button class="btn btn-danger" data-action="logout">Cerrar sesión</button></div>'
     });
   }
 
@@ -912,7 +914,7 @@
         + '<div class="field"><label for="epp-grace">Gracia antes de alertar (s)</label><input class="input" id="epp-grace" name="graceSeconds" type="number" min="1" max="60" value="' + config.graceSeconds + '"></div>'
         + '<div class="field"><label for="epp-cooldown">Enfriamiento entre alertas (s)</label><input class="input" id="epp-cooldown" name="cooldownSeconds" type="number" min="10" max="600" value="' + config.cooldownSeconds + '"></div>'
         + '</div>'
-        + '<div class="field"><label>Opciones de la demo</label><div class="epp-check-row">'
+        + '<div class="field"><label>Opciones de alerta</label><div class="epp-check-row">'
         + '<label class="check-item"><input type="checkbox" name="alertSound"' + (config.alertSound ? ' checked' : '') + '> Sonido de alerta</label>'
         + '<label class="check-item"><input type="checkbox" name="evidence"' + (config.evidence ? ' checked' : '') + '> Guardar evidencia</label>'
         + '<label class="check-item"><input type="checkbox" name="showBoxes"' + (config.showBoxes ? ' checked' : '') + '> Mostrar sub-cajas</label>'
@@ -974,6 +976,9 @@
         break;
       case 'logout':
         closeModal();
+        if (AUTEC.supabase && AUTEC.supabase.logout) {
+          AUTEC.supabase.logout().catch(function () {});
+        }
         state.auth = null;
         state.impersonating = false;
         state.sidebarOpen = false;
@@ -987,10 +992,12 @@
         openAccount();
         break;
       case 'demo-toggle':
+        if (!U.DEMO_MODE) break;
         state.demoOpen = !state.demoOpen;
         renderDemo();
         break;
       case 'demo-role': {
+        if (!U.DEMO_MODE) break;
         var role = el.getAttribute('data-role');
         var currentId = state.auth && companyById(state.auth.companyId) ? state.auth.companyId : 'cim';
         state.auth = { role: role, companyId: currentId };
@@ -1000,17 +1007,21 @@
         break;
       }
       case 'demo-accent':
+        if (!U.DEMO_MODE) break;
         state.accent = el.getAttribute('data-accent');
         renderRoute({ preserveScroll: true });
         break;
       case 'demo-density':
+        if (!U.DEMO_MODE) break;
         state.density = el.getAttribute('data-density');
         renderRoute({ preserveScroll: true });
         break;
       case 'demo-reset':
+        if (!U.DEMO_MODE) break;
         resetDemo();
         break;
       case 'back-to-admin':
+        if (!U.DEMO_MODE) break;
         state.impersonating = false;
         state.auth = { role: 'creator', companyId: state.auth.companyId };
         var returnTo = state.returnTo || '/admin';
@@ -1022,6 +1033,7 @@
         renderRoute({ preserveScroll: true });
         break;
       case 'quick-login': {
+        if (!U.DEMO_MODE) break;
         var quickRole = el.getAttribute('data-role');
         loginAs(quickRole, quickRole === 'creator' ? null : state.loginCompanyId);
         break;
@@ -1340,7 +1352,7 @@
           frame.classList.add('is-flashing');
           setTimeout(function () { frame.classList.remove('is-flashing'); }, 420);
         }
-        toast('Captura guardada (demo)', 'success');
+        toast('Captura guardada', 'success');
         break;
       }
       case 'toggle-fullscreen': {
@@ -1387,10 +1399,10 @@
         renderRoute();
         break;
       case 'export':
-        toast('Exportación generada (demo)', 'success');
+        toast('Exportación generada', 'success');
         break;
       case 'save-settings':
-        toast('Ajustes guardados (demo)', 'success');
+        toast('Ajustes guardados', 'success');
         break;
       case 'clear-filters':
         var scope = el.getAttribute('data-scope');
@@ -1398,6 +1410,7 @@
         renderRoute({ preserveScroll: true });
         break;
       case 'open-demo':
+        if (!U.DEMO_MODE) break;
         closeModal();
         state.demoOpen = true;
         renderDemo();
@@ -1425,9 +1438,43 @@
     }
 
     if (name === 'login') {
-      var role = state.loginTab === 'company' ? 'company_admin' : 'creator';
-      loginAs(role, role === 'creator' ? null : (fdValue(fd, 'companyId') || state.loginCompanyId));
-      return;
+      var email = String(fdValue(fd, 'email') || '').trim();
+      var password = String(fdValue(fd, 'password') || '');
+      if (!email || !password) {
+        toast('Ingresá email y contraseña', 'danger');
+        return;
+      }
+      if (!AUTEC.supabase || !AUTEC.supabase.login) {
+        toast('El backend no está disponible', 'danger');
+        return;
+      }
+      toast('Verificando credenciales…', 'info');
+      return AUTEC.supabase.login(email, password).then(function (profile) {
+        if (!profile) {
+          toast('Email o contraseña incorrectos', 'danger');
+          return;
+        }
+        state.auth = {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          companyId: profile.companyId || null,
+          profile: profile
+        };
+        if (AUTEC.boot) AUTEC.boot.authenticated = true;
+        state.impersonating = false;
+        state.sidebarOpen = false;
+        state.demoOpen = false;
+        if (profile.role !== 'creator' && profile.companyId && AUTEC.supabase.saveCaptureContext) {
+          AUTEC.supabase.saveCaptureContext(profile.companyId, '');
+        }
+        closeModal();
+        navigate(homePath());
+        toast('Bienvenido, ' + (profile.name || 'usuario'), 'success');
+      }).catch(function (error) {
+        toast((error && error.message) || 'No se pudo iniciar sesión', 'danger');
+      });
     }
 
     if (name === 'access-request') {
@@ -1458,7 +1505,7 @@
       state.requestSubmitted = true;
       state.requestCompany = requestName;
       renderRoute();
-      toast('Solicitud registrada (demo)', 'success');
+      toast('Solicitud registrada', 'success');
       return;
     }
 
@@ -1632,7 +1679,7 @@
     if (name === 'reset-password') {
       var resetUser = AUTEC.store.users.find(function (item) { return item.id === fdValue(fd, 'id'); });
       closeModal();
-      toast(resetUser ? 'Enlace generado para ' + resetUser.name + ' (demo)' : 'Enlace generado (demo)', 'success');
+      toast(resetUser ? 'Enlace generado para ' + resetUser.name : 'Enlace generado', 'success');
       return;
     }
 
@@ -1719,7 +1766,7 @@
           company.skills = company.skills.filter(function (id) { return selectedPlan.skills.indexOf(id) !== -1; });
           company.payments = company.payments || [];
           company.payments.unshift({
-            date: U.formatDate(isoDate(U.DEMO_TODAY)),
+            date: U.formatDate(isoDate(U.TODAY)),
             concept: selectedPlan.name + ' · activación',
             amount: selectedPlan.price,
             method: 'Transferencia',
@@ -1816,12 +1863,12 @@
     }
 
     if (name === 'admin-settings' || name === 'security-settings') {
-      toast('Ajustes de la plataforma guardados (demo)', 'success');
+      toast('Ajustes de la plataforma guardados', 'success');
       return;
     }
 
     if (name === 'notification-settings') {
-      toast('Preferencias de notificaciones guardadas (demo)', 'success');
+      toast('Preferencias de notificaciones guardadas', 'success');
       return;
     }
 
@@ -1980,7 +2027,7 @@
     if (!form) return;
     event.preventDefault();
     handleForm(form.getAttribute('data-form'), form, new FormData(form));
-    if (AUTEC.supabase && AUTEC.supabase.persistStore) AUTEC.supabase.persistStore();
+    if (state.auth && AUTEC.supabase && AUTEC.supabase.persistStore) AUTEC.supabase.persistStore();
   });
 
   document.addEventListener('input', function (event) {

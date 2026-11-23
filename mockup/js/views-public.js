@@ -46,13 +46,13 @@
       + '<p class="hero-sub">VigIA convierte una cámara común en un puesto de monitoreo asistido. Detecta personas, mantiene su identidad y suma skills a medida que tu operación las necesita. Todo local, liviano y bajo tu control.</p>'
       + '<div class="hero-actions">'
       + '<a class="btn btn-primary btn-lg" href="#/solicitar-acceso">Solicitar acceso ' + I('arrow-right', 16) + '</a>'
-      + '<a class="btn btn-ghost btn-lg" href="#/login">Ver la demo</a>'
+      + '<a class="btn btn-ghost btn-lg" href="#/login">Iniciar sesión</a>'
       + '</div>'
       + '<div class="hero-proof">'
       + '<span>' + I('check-circle', 14) + ' Procesamiento local</span>'
       + '<span>' + I('check-circle', 14) + ' EPP en piloto</span>'
       + '<span>' + I('check-circle', 14) + ' Sin cuotas por cámara</span>'
-      + '<span>' + I('check-circle', 14) + ' DroidCam como cliente</span>'
+      + '<span>' + I('check-circle', 14) + ' Cámaras IP en integración</span>'
       + '</div>'
       + '</div>'
       + '<div class="hero-visual"><div class="hero-product">'
@@ -76,7 +76,7 @@
       + '<div class="section-head">'
       + '<span class="eyebrow">Una plataforma, varias capas</span>'
       + '<h2>De la cámara al dato útil, sin infraestructura pesada.</h2>'
-      + '<p>VigIA corre en tu equipo, toma video de DroidCam y transforma detecciones en información operativa. Cada skill se entrena y valida antes de activarse.</p>'
+      + '<p>VigIA corre en tu equipo, procesa el video localmente y guarda la información operativa en Supabase. Cada skill se entrena y valida antes de activarse.</p>'
       + '</div>'
       + '<div class="feature-grid">'
       + '<article class="feature-card">'
@@ -103,21 +103,21 @@
       + '<div class="feature-visual-label"><span>Infraestructura</span><span>LOCAL</span></div>'
       + '<div class="feature-list">'
       + featureItem('check-circle', 'Procesamiento en tu equipo')
-      + featureItem('wifi', 'DroidCam como única cámara')
-      + featureItem('database', 'Datos guardados localmente')
+      + featureItem('wifi', 'Cámaras IP en integración')
+      + featureItem('database', 'Datos centralizados en Supabase')
       + featureItem('zap', 'Sin cuotas por cámara')
       + '</div>'
       + '</div>'
-      + '<div><h3>Local y liviano</h3><p>Sin nube obligatoria ni hardware dedicado. VigIA se instala, se conecta a la cámara y empieza a medir.</p></div>'
+      + '<div><h3>Local y liviano</h3><p>El video se procesa en tu equipo y los datos se centralizan en Supabase. VigIA se instala, se conecta a la cámara y empieza a medir.</p></div>'
       + '</article>'
       + '<article class="feature-card">'
       + '<div class="feature-visual">'
-      + '<div class="feature-visual-label"><span>Panel del creador</span><span>8 EMPRESAS</span></div>'
-      + '<div class="feature-companies">'
-      + companyLine('CIM', 'CIM Seguridad', 'Profesional', '#F5A524')
-      + companyLine('PS', 'Planta Sur', 'Profesional', '#60A5FA')
-      + companyLine('CA', 'Constructora Andes', 'Corporativo', '#34D399')
-      + companyLine('RC', 'Retail Centro', 'Demo', '#22D3EE')
+      + '<div class="feature-visual-label"><span>Panel del creador</span><span>SUPABASE</span></div>'
+      + '<div class="feature-list">'
+      + featureItem('building', 'Empresas y solicitudes')
+      + featureItem('users', 'Planes y asientos')
+      + featureItem('layers', 'Skills globales')
+      + featureItem('activity', 'Auditoría y sesiones')
       + '</div>'
       + '</div>'
       + '<div><h3>Una app, varias empresas</h3><p>El creador administra empresas, planes, asientos y skills. Cada empresa ve solo su operación, su equipo y su plan.</p></div>'
@@ -188,7 +188,7 @@
       + '<div class="section-head">'
       + '<span class="eyebrow">Puesta en marcha</span>'
       + '<h2>Tres pasos para abrir tu panel.</h2>'
-      + '<p>La maqueta ya incluye datos de prueba para recorrer el flujo completo sin configurar nada.</p>'
+      + '<p>Las cuentas y los permisos se gestionan en Supabase. El acceso se habilita con el usuario creado por el administrador.</p>'
       + '</div>'
       + '<div class="steps">'
       + '<article class="step-card"><span class="step-number">01 / SOLICITUD</span><h3>Solicitá acceso</h3><p>Contanos qué empresa representás, cuántos usuarios estimás y qué skills te interesan. El creador revisa la solicitud.</p></article>'
@@ -200,15 +200,15 @@
 
   function ctaBand() {
     return '<section class="section"><div class="cta-band">'
-      + '<div><h2>¿Listo para verlo con tus propios datos?</h2><p>La demo es local, gratuita y no requiere tarjeta. Los datos se reinician al recargar.</p></div>'
-      + '<div class="inline-actions"><a class="btn btn-primary" href="#/solicitar-acceso">Solicitar acceso</a><a class="btn btn-ghost" href="#/login">Entrar a la demo</a></div>'
+      + '<div><h2>¿Listo para trabajar con tus propios datos?</h2><p>Ingresá con tu usuario de VigIA. El video se procesa en tu equipo y la operación queda registrada en Supabase.</p></div>'
+      + '<div class="inline-actions"><a class="btn btn-primary" href="#/solicitar-acceso">Solicitar acceso</a><a class="btn btn-ghost" href="#/login">Iniciar sesión</a></div>'
       + '</div></section>';
   }
 
   function footer() {
     return '<footer class="landing-footer">'
       + C.brand({ href: '#/' })
-      + '<span>VigIA · Maqueta visual · Sin backend ni autenticación real</span>'
+      + '<span>VigIA · Visión artificial con persistencia en Supabase</span>'
       + '<div class="landing-footer-links"><a href="mailto:hola@vigia.local">Contacto</a><a href="#/">Privacidad</a><a href="#/">Términos</a></div>'
       + '</footer>';
   }
@@ -218,57 +218,38 @@
   };
 
   V.login = function () {
-    var state = AUTEC.app.state;
-    var tab = state.loginTab || 'creator';
-    var companyId = state.loginCompanyId || 'cim';
-    var company = AUTEC.store.companies.find(function (item) { return item.id === companyId; }) || AUTEC.store.companies[0];
-    var admin = AUTEC.store.users.find(function (user) {
-      return user.companyId === company.id && user.role === 'company_admin' && user.status === 'active';
-    }) || AUTEC.store.users.find(function (user) { return user.companyId === company.id; });
-    var email = tab === 'creator' ? 'admin@vigia.local' : (admin ? admin.email : 'demo@empresa.com');
-    var companyOptions = AUTEC.store.companies.filter(function (item) {
-      return item.status !== 'suspended';
-    }).map(function (item) {
-      return '<option value="' + item.id + '"' + (item.id === company.id ? ' selected' : '') + '>' + U.escapeHtml(item.name) + '</option>';
-    }).join('');
+    var boot = AUTEC.boot || {};
+    var connected = !!(AUTEC.supabase && AUTEC.supabase.configured) && boot.source !== 'error';
+    var errorNote = (!connected && boot.error)
+      ? '<div class="login-note">' + I('alert', 14) + '<span>' + U.escapeHtml(boot.error) + '</span></div>'
+      : '';
 
     return '<div class="login-page">'
       + '<aside class="login-brand">'
       + C.brand({ href: '#/' })
       + '<div class="login-brand-copy">'
-      + '<span class="hero-eyebrow">Acceso de demostración</span>'
+      + '<span class="hero-eyebrow">Acceso seguro</span>'
       + '<h1>Tu operación,<br>bajo control.</h1>'
-      + '<p>Entrá como creador para administrar la plataforma, o como empresa para recorrer el panel operativo. No hay contraseña real ni backend.</p>'
+      + '<p>Ingresá con el usuario creado por el administrador. Tu perfil y tus permisos se validan contra Supabase.</p>'
       + '<div class="login-status">'
-      + '<div class="login-status-row"><span class="status-dot status-dot--success"></span> Servidor local en línea</div>'
-      + '<div class="login-status-row"><span class="status-dot status-dot--success"></span> Cámara DroidCam conectada</div>'
-      + '<div class="login-status-row"><span class="status-dot status-dot--success"></span> Datos de demo cargados</div>'
+      + '<div class="login-status-row"><span class="status-dot status-dot--' + (connected ? 'success' : 'danger') + '"></span> '
+      + (connected ? 'Supabase conectado' : 'Sin conexión con Supabase') + '</div>'
+      + '<div class="login-status-row"><span class="status-dot status-dot--success"></span> Sesión con cookie HttpOnly</div>'
+      + '<div class="login-status-row"><span class="status-dot status-dot--success"></span> Procesamiento local de video</div>'
       + '</div>'
       + '</div>'
-      + '<div class="login-brand-foot">' + I('shield-check', 14) + ' VigIA · MAQUETA V0.1 · SIN BACKEND</div>'
+      + '<div class="login-brand-foot">' + I('shield-check', 14) + ' VigIA · Acceso autenticado</div>'
       + '</aside>'
       + '<main class="login-panel"><div class="login-card">'
       + '<a class="login-back" href="#/">' + I('arrow-left', 14) + ' Volver al inicio</a>'
       + '<h2>Entrar a VigIA</h2>'
-      + '<p>Elegí un perfil. La maqueta no valida credenciales.</p>'
-      + '<div class="segmented" role="tablist">'
-      + '<button type="button" class="' + (tab === 'creator' ? 'is-active' : '') + '" data-action="login-tab" data-tab="creator" role="tab" aria-selected="' + (tab === 'creator' ? 'true' : 'false') + '">Creador</button>'
-      + '<button type="button" class="' + (tab === 'company' ? 'is-active' : '') + '" data-action="login-tab" data-tab="company" role="tab" aria-selected="' + (tab === 'company' ? 'true' : 'false') + '">Empresa</button>'
-      + '</div>'
+      + '<p>Ingresá tus credenciales para continuar.</p>'
       + '<form class="login-form" data-form="login">'
-      + '<div class="field"><label for="login-email">Email</label><input class="input" id="login-email" name="email" type="email" value="' + U.escapeHtml(email) + '" autocomplete="username"></div>'
-      + '<div class="field"><label for="login-password">Contraseña</label><input class="input" id="login-password" name="password" type="password" value="demo" autocomplete="current-password"></div>'
-      + (tab === 'company' ? '<div class="field"><label for="login-company">Empresa</label><select class="select" id="login-company" name="companyId" data-login-company>' + companyOptions + '</select></div>' : '')
+      + '<div class="field"><label for="login-email">Email</label><input class="input" id="login-email" name="email" type="email" autocomplete="username" required autofocus></div>'
+      + '<div class="field"><label for="login-password">Contraseña</label><input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required></div>'
       + '<button class="btn btn-primary btn-lg btn-block" type="submit">Entrar</button>'
       + '</form>'
-      + '<div class="login-demo">'
-      + '<div class="login-demo-label">Acceso rápido de demo</div>'
-      + '<div class="login-demo-actions">'
-      + '<button class="btn btn-secondary" data-action="quick-login" data-role="creator">' + I('shield', 15) + ' Creador</button>'
-      + '<button class="btn btn-secondary" data-action="quick-login" data-role="company_admin">' + I('building', 15) + ' Empresa</button>'
-      + '</div>'
-      + '</div>'
-      + '<div class="login-note">' + I('info', 14) + '<span>Los datos son ficticios y viven en memoria. Recargar la página restaura el estado inicial.</span></div>'
+      + errorNote
       + '</div></main>'
       + '</div>';
   };
@@ -288,8 +269,8 @@
         + '<main class="request-main"><div class="request-card"><div class="request-success">'
         + '<span class="request-success-icon">' + I('check-circle', 26) + '</span>'
         + '<h2>Solicitud enviada</h2>'
-        + '<p>Recibimos los datos de <strong>' + U.escapeHtml(state.requestCompany || 'tu empresa') + '</strong>. En esta maqueta la solicitud queda registrada en el panel del creador y no se envía ningún correo real.</p>'
-        + '<div class="inline-actions"><button class="btn btn-primary" data-action="reset-request">Volver al inicio</button><a class="btn btn-ghost" href="#/login">Entrar a la demo</a></div>'
+        + '<p>Recibimos los datos de <strong>' + U.escapeHtml(state.requestCompany || 'tu empresa') + '</strong>. La solicitud queda registrada para revisión del administrador.</p>'
+        + '<div class="inline-actions"><button class="btn btn-primary" data-action="reset-request">Volver al inicio</button><a class="btn btn-ghost" href="#/login">Iniciar sesión</a></div>'
         + '</div></div></main></div>';
     }
 
@@ -316,7 +297,7 @@
       + '</div>'
       + '<div class="field"><label for="req-plan">Plan de interés</label><select class="select" id="req-plan" name="planId">' + planOptions + '</select></div>'
       + '<div class="field"><label for="req-message">¿Qué querés monitorear?</label><textarea class="textarea" id="req-message" name="message" placeholder="Cámaras, sedes, horarios, skills de interés..."></textarea></div>'
-      + '<div class="form-note">' + I('info', 14) + '<span>Al enviar, la solicitud aparece en el panel del creador como pendiente. En esta maqueta no se envía ningún email.</span></div>'
+      + '<div class="form-note">' + I('info', 14) + '<span>Al enviar, la solicitud aparece en el panel del creador como pendiente.</span></div>'
       + '<div class="inline-actions"><button class="btn btn-primary" type="submit">Enviar solicitud ' + I('arrow-right', 15) + '</button><a class="btn btn-ghost" href="#/login">Ya tengo acceso</a></div>'
       + '</form>'
       + '</div></main></div>';

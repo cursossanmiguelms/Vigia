@@ -18,19 +18,22 @@ import socket
 import sys
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, unquote, urlparse
 from urllib.request import Request, urlopen
 
+import auth_store
 import detector
 import supabase_store
 
 APP_NAME = "VigIA"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 BASE_DIR = Path(__file__).resolve().parent
 MOCKUP_DIR = BASE_DIR / "mockup"
 MOCKUP_INDEX_FILE = MOCKUP_DIR / "index.html"
@@ -550,6 +553,8 @@ class AutecHandler(BaseHTTPRequestHandler):
             )
         elif path == "/api/supabase/health":
             self.send_json(200, supabase_store.health())
+        elif path == "/api/auth/me":
+            self.handle_auth_me()
         elif path.startswith("/api/db/"):
             self.handle_db_get(path[len("/api/db/") :], params)
         elif path == "/api/probe":
@@ -576,15 +581,23 @@ class AutecHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - nombre exigido por BaseHTTPRequestHandler
         parsed = urlparse(self.path)
-        if parsed.path == "/api/capture":
+        if parsed.path == "/api/auth/login":
+            self.handle_login()
+        elif parsed.path == "/api/auth/logout":
+            self.handle_logout()
+        elif parsed.path == "/api/capture":
+            if not self.require_auth(): return
             self.handle_capture(parse_qs(parsed.query))
         elif parsed.path == "/api/camera/lens":
             self.handle_camera_lens()
         elif parsed.path == "/api/events":
+            if not self.require_auth(): return
             self.handle_event()
         elif parsed.path == "/api/metrics":
+            if not self.require_auth(): return
             self.handle_metric()
         elif parsed.path.startswith("/api/db/"):
+            if not self.require_auth(): return
             self.handle_db_write("POST", parsed.path[len("/api/db/") :], parse_qs(parsed.query))
         else:
             self.send_json(404, {"ok": False, "error": "Ruta no encontrada."})
@@ -592,6 +605,7 @@ class AutecHandler(BaseHTTPRequestHandler):
     def do_PATCH(self) -> None:  # noqa: N802 - nombre exigido por BaseHTTPRequestHandler
         parsed = urlparse(self.path)
         if parsed.path.startswith("/api/db/"):
+            if not self.require_auth(): return
             self.handle_db_write("PATCH", parsed.path[len("/api/db/") :], parse_qs(parsed.query))
         else:
             self.send_json(404, {"ok": False, "error": "Ruta no encontrada."})
@@ -599,6 +613,7 @@ class AutecHandler(BaseHTTPRequestHandler):
     def do_DELETE(self) -> None:  # noqa: N802 - nombre exigido por BaseHTTPRequestHandler
         parsed = urlparse(self.path)
         if parsed.path.startswith("/api/db/"):
+            if not self.require_auth(): return
             self.handle_db_write("DELETE", parsed.path[len("/api/db/") :], parse_qs(parsed.query))
         else:
             self.send_json(404, {"ok": False, "error": "Ruta no encontrada."})
@@ -610,7 +625,16 @@ class AutecHandler(BaseHTTPRequestHandler):
     def end_headers(self) -> None:
         # La maqueta tambien puede servirse desde otro puerto local durante
         # el desarrollo. El video y las detecciones son datos locales.
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "")
+        allowed_origins = {
+            "http://127.0.0.1:8000", "http://localhost:8000",
+            "http://127.0.0.1:8081", "http://localhost:8081",
+        }
+        self.send_header(
+            "Access-Control-Allow-Origin",
+            origin if origin in allowed_origins else "*",
+        )
+        self.send_header("Access-Control-Allow-Credentials", "true")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
         self.send_header(
             "Access-Control-Allow-Headers",
@@ -682,13 +706,25 @@ class AutecHandler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def send_json(self, status: int, payload: dict) -> None:
+    def send_json(self, status: int, payload: dict, extra_headers: dict | None = None) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        request_id = self.headers.get("X-Request-Id") or uuid.uuid4().hex[:12]
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Request-Id", request_id)
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
         self.end_headers()
+        print(json.dumps({
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "level": "error" if status >= 500 else "info",
+            "requestId": request_id,
+            "method": self.command,
+            "path": urlparse(self.path).path,
+            "status": status,
+        }, ensure_ascii=False), flush=True)
         try:
             self.wfile.write(body)
         except (BrokenPipeError, ConnectionResetError):
@@ -901,6 +937,97 @@ class AutecHandler(BaseHTTPRequestHandler):
                 "chunks": chunks,
                 "frames": frames,
                 "url": url,
+            },
+        )
+
+    def session_token(self) -> str:
+        """Lee el token de sesión de la cookie HttpOnly."""
+        try:
+            cookie = SimpleCookie()
+            cookie.load(self.headers.get("Cookie", ""))
+            morsel = cookie.get(auth_store.SESSION_COOKIE)
+            return morsel.value if morsel else ""
+        except Exception:  # noqa: BLE001 - una cookie rota no debe romper el server
+            return ""
+
+    def current_session(self) -> dict | None:
+        return auth_store.get_session(self.session_token())
+
+    def require_auth(self) -> dict | None:
+        """Devuelve la sesión o responde 401. El caller debe cortar si es None."""
+        session = self.current_session()
+        if not session:
+            self.send_json(401, {"ok": False, "error": "Sesión no válida o vencida."})
+            return None
+        return session
+
+    def handle_login(self) -> None:
+        try:
+            payload = self.read_json_body(64 * 1024)
+        except ValueError as exc:
+            self.send_json(400, {"ok": False, "error": str(exc)})
+            return
+        if not isinstance(payload, dict):
+            self.send_json(400, {"ok": False, "error": "El cuerpo debe ser un objeto JSON."})
+            return
+
+        if not supabase_store.is_configured():
+            self.send_json(503, {"ok": False, "error": "Supabase no está configurado."})
+            return
+
+        profile = auth_store.authenticate(payload.get("email", ""), payload.get("password", ""))
+        if not profile:
+            self.send_json(401, {"ok": False, "error": "Email o contraseña incorrectos."})
+            return
+
+        ip = self.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        ip = ip or (self.client_address[0] if self.client_address else "")
+        token = auth_store.create_session(profile, ip)
+        max_age = auth_store.SESSION_HOURS * 3600
+        cookie = (
+            f"{auth_store.SESSION_COOKIE}={token}; HttpOnly; SameSite=Lax; "
+            f"Path=/; Max-Age={max_age}{self.cookie_secure_flag()}"
+        )
+        self.send_json(
+            200,
+            {
+                "ok": True,
+                "profile": auth_store.public_profile(profile),
+                "expiresIn": max_age,
+            },
+            extra_headers={"Set-Cookie": cookie},
+        )
+
+    def handle_logout(self) -> None:
+        auth_store.end_session(self.session_token())
+        cookie = (
+            f"{auth_store.SESSION_COOKIE}=; HttpOnly; SameSite=Lax; "
+            f"Path=/; Max-Age=0{self.cookie_secure_flag()}"
+        )
+        self.send_json(200, {"ok": True}, extra_headers={"Set-Cookie": cookie})
+
+    def cookie_secure_flag(self) -> str:
+        """La cookie viaja con Secure cuando la peticion llega por HTTPS."""
+        forwarded = self.headers.get("X-Forwarded-Proto", "").split(",")[0].strip()
+        origin = self.headers.get("Origin", "")
+        if forwarded.lower() == "https" or origin.lower().startswith("https://"):
+            return "; Secure"
+        return ""
+
+    def handle_auth_me(self) -> None:
+        session = self.current_session()
+        if not session:
+            # Responder 200 con profile null evita ruido en la consola del
+            # navegador cuando se comprueba la sesión al cargar la página.
+            self.send_json(200, {"ok": True, "authenticated": False, "profile": None})
+            return
+        self.send_json(
+            200,
+            {
+                "ok": True,
+                "authenticated": True,
+                "profile": auth_store.public_profile(session["profile"]),
+                "sessionId": session["session"].get("id"),
             },
         )
 
