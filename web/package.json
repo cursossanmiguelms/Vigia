@@ -1,0 +1,19 @@
+{
+  "name": "vigia-web",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Interfaz Next.js de VigIA. La API y el proxy de camara siguen en server.py.",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3000"
+  },
+  "dependencies": {
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

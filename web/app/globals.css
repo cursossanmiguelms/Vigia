@@ -1,0 +1,29 @@
+/* La base visual this vive en /legacy/css/autec.css. Este archivo solo
+   evita parpadeos antes de que cargue el CSS del diseno. */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: #070b12;
+  color: #e6edf6;
+}
+
+#app,
+#modal-root,
+#toast-root,
+#demo-root {
+  min-height: 0;
+}
+
+.vigia-load-error {
+  margin: 24px auto;
+  max-width: 720px;
+  padding: 16px 18px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.28);
+  color: #fecaca;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+}

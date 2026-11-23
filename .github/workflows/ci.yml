@@ -39,6 +39,24 @@ jobs:
       - name: Pruebas del motor de areas
         run: npm test
 
+  nextjs:
+    name: Next.js
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Compilar interfaz
+        run: npm run build
+
   supabase-migrations:
     name: Migraciones Supabase
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

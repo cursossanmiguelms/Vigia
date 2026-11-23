@@ -75,6 +75,30 @@ Si no sabes la IP actual, pulsa **Buscar**. La app escanea la red local y busca 
 
 La reconexión automática está activada por defecto. Si el teléfono se duerme o el WiFi se corta, la app intenta reconectar hasta 12 veces con espera creciente.
 
+## Interfaz Next.js (Fase 2)
+
+La interfaz también corre bajo Next.js en `web/`. El backend Python sigue siendo el único dueño de la API, Supabase, la autenticación y el proxy de cámara. Next solo sirve la UI y reenvía `/api/*`, `/stream`, `/snapshot` y los assets legacy al puerto `8000`.
+
+```powershell
+# Terminal 1: API, Supabase y cámara
+.venv\Scripts\python.exe server.py
+
+# Terminal 2: interfaz Next.js
+cd web
+npm install
+npm run dev
+```
+
+Abre `http://127.0.0.1:3000`. Usa `127.0.0.1` en ambos servicios: la cookie de sesión no cruza entre `localhost` y `127.0.0.1`. Para producción local:
+
+```powershell
+cd web
+npm run build
+npm run start
+```
+
+La UI antigua sigue disponible en `http://127.0.0.1:8000` y el visor legacy en `http://127.0.0.1:8000/clasico`. Si el backend está en otra dirección, configura `VIGIA_API_ORIGIN` antes de arrancar Next.
+
 ## Supabase y acceso
 
 Supabase es la **única fuente de verdad** de VigIA. No hay login falso, fecha simulada ni datos de ejemplo: si Supabase no responde, la interfaz muestra el error y listas vacías. El modo demo solo existe si se activa de forma explícita con `?demo=1` o `localStorage['vigia.demo'] = '1'`.
@@ -803,13 +827,14 @@ VigIA procesa el video en el equipo: el servidor escucha solo en `127.0.0.1` y l
 
 ## Siguiente fase
 
-La versión 0.5.0 ya incluye la Fase 1: Supabase como única fuente de verdad, auth simple persistida con cookies `HttpOnly`, limpieza de datos de demostración y CI con Python y Node. La detección local, zonas, alertas, EPP, mesas, caídas y ocupación por áreas siguen disponibles sobre esa base. El siguiente paso recomendado es:
+La versión 0.5.0 ya incluye la Fase 1 (Supabase como única fuente de verdad, auth simple persistida con cookies `HttpOnly`, limpieza de datos de demostración y CI) y el primer paso de la Fase 2: la interfaz corre bajo Next.js en `web/`, reutilizando la API Python sin duplicar reglas de negocio. La detección local, zonas, alertas, EPP, mesas, caídas y ocupación por áreas siguen disponibles sobre esa base. El siguiente paso recomendado es:
 
-1. Migrar la interfaz a Next.js para separar claramente frontend y backend.
-2. Integrar cámaras IP reales (RTSP/HTTP), conservando DroidCam como cliente legacy.
-3. Endurecer RLS y permisos por empresa en Supabase.
-4. Entrenar y validar el modelo EPP de casco y chaleco con capturas reales y métricas reproducibles (`models/epp/README.md`).
-5. Reemplazar la heurística de caídas por un modelo de pose y validarla con videos etiquetados.
-6. Validar mesas y ocupación por áreas con layouts reales y medir el error de conteo.
-7. Exportar el mapa de calor como imagen y conservarlo entre sesiones.
-8. Publicar en Vercel cuando la migración a Next.js esté lista. Pagos y Clerk quedan fuera de este plan.
+1. Sustituir los scripts legacy de `mockup/js` por componentes React por rutas, empezando por landing, login y solicitud de acceso.
+2. Extraer los motores puros (zonas, líneas, EPP, mesas, caídas y áreas) a módulos ESM/TS con un adaptador de almacenamiento.
+3. Integrar cámaras IP reales (RTSP/HTTP), conservando DroidCam como cliente legacy.
+4. Endurecer RLS y permisos por empresa en Supabase.
+5. Entrenar y validar el modelo EPP de casco y chaleco con capturas reales y métricas reproducibles (`models/epp/README.md`).
+6. Reemplazar la heurística de caídas por un modelo de pose y validarla con videos etiquetados.
+7. Validar mesas y ocupación por áreas con layouts reales y medir el error de conteo.
+8. Exportar el mapa de calor como imagen y conservarlo entre sesiones.
+9. Publicar en Vercel cuando la migración a Next.js esté completa. Pagos y Clerk quedan fuera de este plan.

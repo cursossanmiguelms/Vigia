@@ -20,6 +20,15 @@ supabase/.branches/
 Thumbs.db
 desktop.ini
 
+# Next.js
+node_modules/
+.next/
+out/
+web/node_modules/
+web/.next/
+web/out/
+web/.env*
+
 # Captures are local evidence, not source code
 data/captures/*.jpg
 data/captures/*.jpeg
